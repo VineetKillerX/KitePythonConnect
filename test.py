@@ -44,13 +44,16 @@ def trade(token):
 	file_name="holdings.csv"
 	holding = ''
 	last_min=-1
+	datetime_obj_hour_fwd=datetime.now()
+	from_date=str(datetime_obj_hour_fwd-timedelta(days=7)).split(" ")[0]
+	to_date=str(datetime_obj_hour_fwd).split(" ")[0]
 	while True:
 		datetime_obj=datetime.now()
 		f=open(file_name,'a')
 		min=int(str(datetime_obj).split(".")[0].split(":")[1])
 		if(min%5==0 and (last_min==-1 or (min!=last_min and last_min!=-1))):
 			last_min=min
-			historical_data = kite.historical_data(instrument_token=token,from_date='2020-03-20',to_date='2020-03-30',interval='5minute')
+			historical_data = kite.historical_data(instrument_token=token,from_date=from_date,to_date=to_date,interval='5minute')
 			df = pd.DataFrame(historical_data)
 			df = indicators.SuperTrend(df,7,3,['open','high','low','close'])
 			df_rsi = indicators.RSI(df,'close',14)
