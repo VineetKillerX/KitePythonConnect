@@ -108,7 +108,7 @@ def trade(token):
           holding = 'up'
           last_price = price
     else:
-      stoper(token,last_price,profit,stop_loss)
+      stoper(token,last_price,profit,stop_loss,datetime_obj)
     time.sleep(1)		
 
 
@@ -122,7 +122,7 @@ def getDateTime():
 
 
 
-def stoper(token,last_price,profit,stop_loss):
+def stoper(token,last_price,profit,stop_loss,datetime_obj):
   quote = kite.quote(token)
   global holding
   price = quote[token]['last_price']
