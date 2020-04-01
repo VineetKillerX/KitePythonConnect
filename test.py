@@ -68,14 +68,14 @@ def trade(token):
 				if (signal=='down' and holding!='down' and rsi<50):
 					quote = kite.quote(token)
 					price = quote[token]['last_price']
-					f.write("Sell"+","+str(instrument_token)+","+str(price)+",supertrend,"+str(datetime.now())+"\n")
+					f.write("Sell"+","+str(token)+","+str(price)+",supertrend,"+str(datetime.now())+"\n")
 					f.close()
 					holding = 'down'
 					last_price = price
 				elif (signal == 'up' and holding != 'up' and rsi>50):
 					quote = kite.quote(token)
 					price = quote[token]['last_price']
-					f.write("Buy"+","+str(instrument_token)+","+str(price)+",supertrend,"+str(datetime.now())+"\n")
+					f.write("Buy"+","+str(token)+","+str(price)+",supertrend,"+str(datetime.now())+"\n")
 					holding = 'up'
 					last_price = price
 		else:
@@ -86,29 +86,29 @@ def trade(token):
 				temp_loss = (last_price-price)/last_price
 				if(temp_profit>=profit):
 					holding = ''
-					f.write("Sell"+","+str(instrument_token)+","+str(price)+",profit,"+str(datetime.now())+"\n")
+					f.write("Sell"+","+str(token)+","+str(price)+",profit,"+str(datetime.now())+"\n")
 					f.close()
 				elif(temp_loss>stop_loss):
 					holding = ''
-					f.write("Sell"+","+str(instrument_token)+","+str(price)+",stoploss,"+str(datetime.now())+"\n")	
+					f.write("Sell"+","+str(token)+","+str(price)+",stoploss,"+str(datetime.now())+"\n")	
 					f.close()
 				if (datetime_obj.hour == 15 and datetime_obj.minute>28):
 					holding = ''
-					f.write("Sell"+","+str(instrument_token)+","+str(price)+",market_close,"+str(datetime.now())+"\n")
+					f.write("Sell"+","+str(token)+","+str(price)+",market_close,"+str(datetime.now())+"\n")
 					f.close()
 			elif (holding=='down'):
 				temp_profit = (last_price-price)/last_price
 				temp_loss = (price-last_price)/last_price
 				if(temp_profit>=profit):
 					holding = ''
-					f.write("Buy"+","+str(instrument_token)+","+str(price)+",profit,"+str(datetime.now())+"\n")
+					f.write("Buy"+","+str(token)+","+str(price)+",profit,"+str(datetime.now())+"\n")
 					f.close()
 				elif(temp_loss>stop_loss):
 					holding = ''
-					f.write("Buy"+","+str(instrument_token)+","+str(price)+",stoploss,"+str(datetime.now())+"\n")
+					f.write("Buy"+","+str(token)+","+str(price)+",stoploss,"+str(datetime.now())+"\n")
 					f.close()
 				if (datetime_obj.hour == 15 and datetime_obj.minute>28):
 					holding = ''
-					f.write("Buy"+","+str(instrument_token)+","+str(price)+",market_close,"+str(datetime.now())+"\n")
+					f.write("Buy"+","+str(token)+","+str(price)+",market_close,"+str(datetime.now())+"\n")
 					f.close()
 		time.sleep(1)					
