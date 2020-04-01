@@ -8,6 +8,7 @@ import indicators
 from datetime import datetime 
 import time
 import multiprocessing
+from datetime import timedelta
 logging.basicConfig(level=logging.INFO)
 import application as ap
 app_properties=ap.app_properties
