@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import indicators
-from datetime import datetime 
+from datetime import datetime,timedelta 
 import time
 import multiprocessing
 logging.basicConfig(level=logging.INFO)
