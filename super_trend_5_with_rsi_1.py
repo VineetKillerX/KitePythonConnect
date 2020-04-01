@@ -15,6 +15,8 @@ kite=None
 api_key = app_properties['api_key']
 api_secret = app_properties['api_secret']
 file_name="holdings_log.csv"
+import pytz
+tz = pytz.timezone('Asia/Kolkata')
 holding =""
 def generate_url():
 	global kite
@@ -51,7 +53,7 @@ def trade(token):
   from_date=str(datetime_obj_hour_fwd-timedelta(days=14)).split(" ")[0]
   to_date=str(datetime_obj_hour_fwd).split(" ")[0]
   while True:
-    datetime_obj=datetime.now()
+    datetime_obj=datetime.now(tz)
     min=int(str(datetime_obj).split(".")[0].split(":")[1])
     if(min%5==0 and (last_min==-1 or (min!=last_min and last_min!=-1))):
       if(last_min==-1 or datetime_obj_hour_fwd<=datetime_obj):
@@ -73,13 +75,13 @@ def trade(token):
         if(signal=='down' and holding!='down' and rsi<50):
           quote = kite.quote(token)
           price = quote[token]['last_price']
-          write_log("Sell"+","+str(token)+","+str(price)+",supertrend,"+str(datetime.now())+"\n")
+          write_log("Sell"+","+str(token)+","+str(price)+",supertrend,"+str(datetime.now(tz))+"\n")
           holding = 'down'
           last_price = price
         elif (signal == 'up' and holding != 'up' and rsi>50):
           quote = kite.quote(token)
           price = quote[token]['last_price']
-          write_log("Buy"+","+str(token)+","+str(price)+",supertrend,"+str(datetime.now())+"\n")
+          write_log("Buy"+","+str(token)+","+str(price)+",supertrend,"+str(datetime.now(tz))+"\n")
           holding = 'up'
           last_price = price
     else:
@@ -97,25 +99,25 @@ def stoper(token,last_price):
     temp_loss = (last_price-price)/last_price
     if(temp_profit>=profit):
       holding = ''
-      write_log("Sell"+","+str(token)+","+str(price)+",profit,"+str(datetime.now())+"\n")
+      write_log("Sell"+","+str(token)+","+str(price)+",profit,"+str(datetime.now(tz))+"\n")
     elif(temp_loss>stop_loss):
       holding = ''
-      write_log("Sell"+","+str(token)+","+str(price)+",stoploss,"+str(datetime.now())+"\n")	
+      write_log("Sell"+","+str(token)+","+str(price)+",stoploss,"+str(datetime.now(tz))+"\n")	
     if (datetime_obj.hour == 15 and datetime_obj.minute>28):
       holding = ''
-      write_log("Sell"+","+str(token)+","+str(price)+",market_close,"+str(datetime.now())+"\n")
+      write_log("Sell"+","+str(token)+","+str(price)+",market_close,"+str(datetime.now(tz))+"\n")
   elif (holding=='down'):
     temp_profit = (last_price-price)/last_price
     temp_loss = (price-last_price)/last_price
     if(temp_profit>=profit):
       holding = ''
-      write_log("Buy"+","+str(token)+","+str(price)+",profit,"+str(datetime.now())+"\n")
+      write_log("Buy"+","+str(token)+","+str(price)+",profit,"+str(datetime.now(tz))+"\n")
     elif(temp_loss>stop_loss):
       holding = ''
-      write_log("Buy"+","+str(token)+","+str(price)+",stoploss,"+str(datetime.now())+"\n")
+      write_log("Buy"+","+str(token)+","+str(price)+",stoploss,"+str(datetime.now(tz))+"\n")
     if (datetime_obj.hour == 15 and datetime_obj.minute>28):
       holding = ''
-      write_log("Buy"+","+str(token)+","+str(price)+",market_close,"+str(datetime.now())+"\n")
+      write_log("Buy"+","+str(token)+","+str(price)+",market_close,"+str(datetime.now(tz))+"\n")
 			
 def write_log(log):
 	f=open(file_name,'a')	
