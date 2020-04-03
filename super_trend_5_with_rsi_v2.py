@@ -17,9 +17,7 @@ api_secret = app_properties['api_secret']
 file_name="holdings_log.csv"
 import pytz
 tz = pytz.timezone('Asia/Kolkata')
-holding =""
 rs1_trend_log="rsi_trend.csv"
-from SlackUtil import sendMessage
 
 
 def generate_url():
@@ -67,7 +65,6 @@ def run(request_token,token):
 def trade(token):
   print("token is started ",token)
   global kite
-  global holding
   profit = 0.02
   stop_loss = 0.01
   last_price = 0.00
@@ -77,6 +74,7 @@ def trade(token):
   to_date=str(datetime_obj_hour_fwd).split(" ")[0]
   historical_data_rsi=""
   historical_data=""
+  holding=""
   while True:
     datetime_obj=getDateTime()
     min=int(str(datetime_obj).split(".")[0].split(":")[1])
@@ -98,18 +96,9 @@ def trade(token):
         profit = 0.01
         stop_loss = 0.005
       else:
-        if(signal=='down' and holding!='down' and rsi<50):
-          price = get_price(token,last_price)
-          write_log("Sell"+","+str(token)+","+str(price)+",supertrend,"+str(getDateTime())+"\n")
-          holding = 'down'
-          last_price = price
-        elif (signal == 'up' and holding != 'up' and rsi>50):
-			price = get_price(token,last_price)
-			write_log("Buy"+","+str(token)+","+str(price)+",supertrend,"+str(getDateTime())+"\n")
-			holding = 'up'
-			last_price = price
+        (holding,last_price)=place_orders(signal,token,holding,price,last_price)
     else:
-      stoper(token,last_price,profit,stop_loss,datetime_obj)
+      holding=stoper(token,last_price,profit,stop_loss,datetime_obj,holding)
     time.sleep(1)		
 
 
@@ -120,12 +109,25 @@ def getDateTime():
 
 
 
+def place_orders(signal,token,holding,last_price):
+	if(signal=='down' and holding!='down' and rsi<50):
+		price =get_price(token,last_price)
+		write_log("Sell"+","+str(token)+","+str(price)+",supertrend,"+str(getDateTime())+"\n")
+		holding = 'down'
+		last_price = price
+	elif (signal == 'up' and holding != 'up' and rsi>50):
+		price =get_price(token,last_price)
+		write_log("Buy"+","+str(token)+","+str(price)+",supertrend,"+str(getDateTime())+"\n")
+		holding = 'up'
+		last_price = price
+	return	(holding,last_price)
 
 
 
-def stoper(token,last_price,profit,stop_loss,datetime_obj):
-  global holding
-  price = get_price(token,last_price)
+
+
+def stoper(token,last_price,profit,stop_loss,datetime_obj,holding):
+  price =get_price(token,last_price)
   if (holding=='up'):
     temp_profit = (price-last_price)/last_price
     temp_loss = (last_price-price)/last_price
@@ -150,6 +152,8 @@ def stoper(token,last_price,profit,stop_loss,datetime_obj):
     if (datetime_obj.hour == 15 and datetime_obj.minute>28):
       holding = ''
       write_log("Buy"+","+str(token)+","+str(price)+",market_close,"+str(getDateTime())+"\n")
+  return holding  
+
 
 
 def get_data(token,from_date,to_date,interval,historical_data,counter=0):
@@ -179,13 +183,12 @@ def get_price(token,price,counter=0):
 		
 		
 		
-	
+
 
 
 			
 def write_log(log,file_name=file_name):
-	sendMessage(log)
-	f=open(file_name,'a')	
-	f.write(log)	
-	f.close()	
-			
+  f=open(file_name,'a')	
+  f.write(log)	
+  f.close()	
+  				
