@@ -96,7 +96,7 @@ def trade(token):
         profit = 0.01
         stop_loss = 0.005
       else:
-        (holding,last_price)=place_orders(signal,token,holding,price,last_price)
+        (holding,last_price)=place_orders(signal,token,holding,last_price)
     else:
       holding=stoper(token,last_price,profit,stop_loss,datetime_obj,holding)
     time.sleep(1)		
