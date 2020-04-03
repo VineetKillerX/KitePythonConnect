@@ -1,7 +1,7 @@
 import requests
 import json
 
-url = 'https://hooks.slack.com/services/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'
+url = 'https://hooks.slack.com/services/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'
 
 def sendMessage(message):
   slack_msg = {};
