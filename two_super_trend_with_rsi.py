@@ -9,9 +9,10 @@ from datetime import datetime,timedelta
 import time
 import multiprocessing
 logging.basicConfig(level=logging.INFO)
-import application as ap
+import common.application as ap
+from common.create_kite_session import *
 app_properties=ap.app_properties
-kite=None
+kite=get_session()
 api_key = app_properties['api_key']
 api_secret = app_properties['api_secret']
 file_name="holdings_2_sup.csv"
@@ -21,17 +22,7 @@ rs1_trend_log="rsi_trend_2_sup.csv"
 from SlackUtil import sendMessage
 
 
-def generate_url():
-	global kite
-	kite = KiteConnect(api_key,api_secret)
-	url = kite.login_url()
-	return url
-
-def run(request_token):
-	global kite
-	data = kite.generate_session(request_token,api_secret)
-	access_token = data["access_token"]
-	kite.set_access_token(access_token)
+def run():
 	jobs = []
 	tokens = ['1510401']
 	for instrument_token in tokens:
@@ -44,68 +35,46 @@ def run(request_token):
 
 
 
-
-
-
-
-def run(request_token,token):
-  global kite
-  data = kite.generate_session(request_token,api_secret)
-  access_token = data["access_token"]
-  kite.set_access_token(access_token)
-  trade(token)
-
-
-
-
-
-
-
-
-
 def trade(token):
-  print("token is started ",token)
-  global kite
-  profit = 0.05
-  stop_loss = 0.025
-  last_price = 0.00
-  last_min=-1
-  datetime_obj_hour_fwd=getDateTime()+timedelta(hours=1)
-  from_date=str(datetime_obj_hour_fwd-timedelta(days=14)).split(" ")[0]
-  to_date=str(datetime_obj_hour_fwd).split(" ")[0]
-  super_trend_prop1={"range":7,"mult":3}
-  super_trend_prop2={"range":7,"mult":2}
-  rsi_prop={"range":14}
-  holding=''
-  order_id=""
-  while True:
-    datetime_obj=getDateTime()
-    min=int(str(datetime_obj).split(".")[0].split(":")[1])
-    if(min%5==0 and (last_min==-1 or (min!=last_min and last_min!=-1))):
-		last_min=min
-		historical_data = kite.historical_data(instrument_token=token,from_date=from_date,to_date=to_date,interval='5minute')
-		df = pd.DataFrame(historical_data)
-		df = indicators.SuperTrend(df,super_trend_prop1['range'],super_trend_prop1['mult'],['open','high','low','close'])
-		df = indicators.SuperTrend(df,super_trend_prop2['range'],super_trend_prop2['mult'],['open','high','low','close'])
-		df = indicators.RSI(df,'close',rsi_prop["range"])
-		tail_dict=df.tail(1).to_dict()
-		index=list(tail_dict['open'].keys())[0]
-		signal1=tail_dict["STX_"+str(super_trend_prop1['range'])+"_"+str(super_trend_prop1['mult'])][index]
-		signal2=tail_dict["STX_"+str(super_trend_prop2['range'])+"_"+str(super_trend_prop2['mult'])][index]
-		
-		suptrenval1=tail_dict["ST_"+str(super_trend_prop1['range'])+"_"+str(super_trend_prop1['mult'])][index]
-		suptrenval2=tail_dict["ST_"+str(super_trend_prop2['range'])+"_"+str(super_trend_prop2['mult'])][index]
-		rsi=tail_dict['RSI_'+str(rsi_prop["range"])][index]
-
-		write_log(str(rsi)+","+str(signal1)+","+str(signal2)+","+str(suptrenval1)+","+str(suptrenval2)+","+str(datetime_obj)+"\n",rs1_trend_log)
-		if (datetime_obj.hour == 15 and datetime_obj.minute>15):
-			profit = 0.01
-			stop_loss = 0.005
+	print("token is started ",token)
+	profit = 0.05
+	stop_loss = 0.025
+	last_price = 0.00
+	last_min=-1
+	datetime_obj_hour_fwd=getDateTime()+timedelta(hours=1)
+	from_date=str(datetime_obj_hour_fwd-timedelta(days=14)).split(" ")[0]
+	to_date=str(datetime_obj_hour_fwd).split(" ")[0]
+	super_trend_prop1={"range":7,"mult":3}
+	super_trend_prop2={"range":7,"mult":2}
+	rsi_prop={"range":14}
+	holding=''
+	order_id=""
+	while True:
+		datetime_obj=getDateTime()
+		min=int(str(datetime_obj).split(".")[0].split(":")[1])
+		if(min%5==0 and (last_min==-1 or (min!=last_min and last_min!=-1))):
+			last_min=min
+			historical_data = kite.historical_data(instrument_token=token,from_date=from_date,to_date=to_date,interval='5minute')
+			df = pd.DataFrame(historical_data)
+			df = indicators.SuperTrend(df,super_trend_prop1['range'],super_trend_prop1['mult'],['open','high','low','close'])
+			df = indicators.SuperTrend(df,super_trend_prop2['range'],super_trend_prop2['mult'],['open','high','low','close'])
+			df = indicators.RSI(df,'close',rsi_prop["range"])
+			tail_dict=df.tail(1).to_dict()
+			index=list(tail_dict['open'].keys())[0]
+			signal1=tail_dict["STX_"+str(super_trend_prop1['range'])+"_"+str(super_trend_prop1['mult'])][index]
+			signal2=tail_dict["STX_"+str(super_trend_prop2['range'])+"_"+str(super_trend_prop2['mult'])][index]
+			suptrenval1=tail_dict["ST_"+str(super_trend_prop1['range'])+"_"+str(super_trend_prop1['mult'])][index]
+			suptrenval2=tail_dict["ST_"+str(super_trend_prop2['range'])+"_"+str(super_trend_prop2['mult'])][index]
+			rsi=tail_dict['RSI_'+str(rsi_prop["range"])][index]
+			write_log(str(rsi)+","+str(signal1)+","+str(signal2)+","+str(suptrenval1)+","+str(suptrenval2)+","+str(datetime_obj)+"\n",rs1_trend_log)
+			if (datetime_obj.hour == 15 and datetime_obj.minute>15):
+				profit = 0.01
+				stop_loss = 0.005
+			else:
+				(holding,last_price,order_id)=place_orders(signal1,signal2,suptrenval1,suptrenval2,token,holding,last_price,rsi,index)
 		else:
-			(holding,last_price,order_id)=place_orders(signal1,signal2,suptrenval1,suptrenval2,token,holding,last_price,rsi,index)
-    else:
-      holding=stoper(token,last_price,profit,stop_loss,datetime_obj,holding,order_id)
-    time.sleep(1)		
+		  holding=stoper(token,last_price,profit,stop_loss,datetime_obj,holding,order_id)
+		time.sleep(1)		
 
 
 
