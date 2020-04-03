@@ -19,6 +19,7 @@ import pytz
 tz = pytz.timezone('Asia/Kolkata')
 holding =""
 rs1_trend_log="rsi_trend.csv"
+from SlackUtil import sendMessage
 
 
 def generate_url():
@@ -157,7 +158,8 @@ def stoper(token,last_price,profit,stop_loss,datetime_obj):
 
 			
 def write_log(log,file_name=file_name):
-  f=open(file_name,'a')	
-  f.write(log)	
-  f.close()	
-  				
+	sendMessage(log)
+	f=open(file_name,'a')	
+	f.write(log)	
+	f.close()	
+			

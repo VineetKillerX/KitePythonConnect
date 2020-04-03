@@ -18,6 +18,7 @@ file_name="holdings_2_sup.csv"
 import pytz
 tz = pytz.timezone('Asia/Kolkata')
 rs1_trend_log="rsi_trend_2_sup.csv"
+from SlackUtil import sendMessage
 
 
 def generate_url():
@@ -117,6 +118,16 @@ def getDateTime():
 def place_orders(signal1,signal2,suptrenval1,suptrenval2,token,holding,last_price,rsi,index,order_id):
 	quote = kite.quote(token)
 	price = quote[token]['last_price']
+		#Stoping condition
+	if((signal1!=signal2 and (suptrenval2>price>suptrenval1  or  suptrenval1>price>suptrenval2) and holding!='') or (holding=='up' and suptrenval2=='down' and suptrenval1=='down') or (holding=='down' and suptrenval2=='up' and suptrenval1=='up')):
+		flag='loss'
+		holding = ''
+		if(price-last_price>0):
+			flag=='profit'
+		if(holding=='up'):
+			write_log(str(order_id)+","+"Sell"+","+str(token)+","+str(price)+","+flag+","+str(getDateTime())+"\n")
+		else:
+			write_log(str(order_id)+","+"Buy"+","+str(token)+","+str(price)+","+flag+","+str(getDateTime())+"\n")
 	if(signal1=='down' and signal2=='down' and price<suptrenval1 and price<suptrenval2 and holding!='down' and rsi<50):
 		order_id=index
 		write_log(str(order_id)+","+"Sell"+","+str(token)+","+str(price)+",supertrend,"+str(getDateTime())+"\n")
@@ -127,16 +138,6 @@ def place_orders(signal1,signal2,suptrenval1,suptrenval2,token,holding,last_pric
 		write_log(str(order_id)+","+"Buy"+","+str(token)+","+str(price)+",supertrend,"+str(getDateTime())+"\n")
 		holding = 'up'
 		last_price = price
-	#Stoping condition
-	elif(signal1!=signal2 and (suptrenval2>price>suptrenval1  or  suptrenval1>price>suptrenval2) and holding!=''):
-		flag='loss'
-		holding = ''
-		if(price-last_price>0):
-			flag=='profit'
-		if(holding=='up'):
-			write_log(str(order_id)+","+"Sell"+","+str(token)+","+str(price)+","+flag+","+str(getDateTime())+"\n")
-		else:
-			write_log(str(order_id)+","+"Buy"+","+str(token)+","+str(price)+","+flag+","+str(getDateTime())+"\n")
 	return	(holding,last_price,order_id)
 
 
@@ -178,20 +179,8 @@ def stoper(token,last_price,profit,stop_loss,datetime_obj,holding,order_id):
 
 			
 def write_log(log,file_name=file_name):
-  f=open(file_name,'a')	
-  f.write(log)	
-  f.close()	
-  				
-
-
-
-def pre_process_material_numbers(input_df, columns=list()):
-	print(columns)
-	for column in columns:
-		print(print(column))
-		input_df = input_df.withColumn(
-		    column+"_T_MOD",
-		    f.when(f.col(column).cast('int').isNotNull(), f.regexp_replace(f.col(column), "^0*", ""))
-		    .otherwise(f.col(column))
-		)
-	return input_df
+	sendMessage(log)
+	f=open(file_name,'a')	
+	f.write(log)	
+	f.close()	
+			
