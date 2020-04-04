@@ -10,10 +10,8 @@ import time
 import multiprocessing
 logging.basicConfig(level=logging.INFO)
 import common.application as ap
-from common.create_kite_session import *
-from common.get_api_data import *
 app_properties=ap.app_properties
-kite=get_session()
+from common.get_api_data import *
 api_key = app_properties['api_key']
 api_secret = app_properties['api_secret']
 file_name="holdings_log.csv"

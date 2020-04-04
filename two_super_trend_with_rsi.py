@@ -10,9 +10,8 @@ import time
 import multiprocessing
 logging.basicConfig(level=logging.INFO)
 import common.application as ap
-from common.create_kite_session import *
 app_properties=ap.app_properties
-kite=get_session()
+from common.get_api_data import *
 api_key = app_properties['api_key']
 api_secret = app_properties['api_secret']
 file_name="holdings_2_sup.csv"
@@ -49,12 +48,13 @@ def trade(token):
 	rsi_prop={"range":14}
 	holding=''
 	order_id=""
+	historical_data=""
 	while True:
 		datetime_obj=getDateTime()
 		min=int(str(datetime_obj).split(".")[0].split(":")[1])
 		if(min%5==0 and (last_min==-1 or (min!=last_min and last_min!=-1))):
 			last_min=min
-			historical_data = kite.historical_data(instrument_token=token,from_date=from_date,to_date=to_date,interval='5minute')
+			historical_data = get_data(token,from_date,to_date,"5minute",historical_data)
 			df = pd.DataFrame(historical_data)
 			df = indicators.SuperTrend(df,super_trend_prop1['range'],super_trend_prop1['mult'],['open','high','low','close'])
 			df = indicators.SuperTrend(df,super_trend_prop2['range'],super_trend_prop2['mult'],['open','high','low','close'])
@@ -85,8 +85,7 @@ def getDateTime():
 
 
 def place_orders(signal1,signal2,suptrenval1,suptrenval2,token,holding,last_price,rsi,index,order_id):
-	quote = kite.quote(token)
-	price = quote[token]['last_price']
+	price = get_price(token,last_price)
 		#Stoping condition
 	if((signal1!=signal2 and (suptrenval2>price>suptrenval1  or  suptrenval1>price>suptrenval2) and holding!='') or (holding=='up' and suptrenval2=='down' and suptrenval1=='down') or (holding=='down' and suptrenval2=='up' and suptrenval1=='up')):
 		flag='loss'
@@ -114,8 +113,7 @@ def place_orders(signal1,signal2,suptrenval1,suptrenval2,token,holding,last_pric
 
 
 def stoper(token,last_price,profit,stop_loss,datetime_obj,holding,order_id):
-  quote = kite.quote(token)
-  price = quote[token]['last_price']
+  price = get_price(token,last_price)
   if (holding=='up'):
     temp_profit = (price-last_price)/last_price
     temp_loss = (last_price-price)/last_price
