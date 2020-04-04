@@ -22,3 +22,17 @@ def get_price(token,price,counter=0):
         else:
             print("returning old price ",price)
             return price
+
+
+def get_price_v1(token,last_price_dict,counter=0):
+    try:
+        price=kite.quote(token)[token]['last_price']
+        return {"_1":price,"_2":price,"_3":price}
+    except:
+        if(counter<=3):
+            print("get_price exception ",counter)
+            return get_price(token,price,counter+1)
+        else:
+            print("returning old price ",last_price_dict)
+            return last_price_dict
+
