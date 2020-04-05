@@ -1,7 +1,7 @@
 import requests
 import json
-
-url = 'https://hooks.slack.com/services/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'
+from common.get_api_data import *
+url = app_properties['slack_url']
 
 def sendMessage(message):
   slack_msg = {};
