@@ -57,6 +57,7 @@ def trade(token):
         df_rsi = indicators.RSI(historical_data_rsi_df,'close',14)
         latest_data = df_rsi.tail(1)
         rsi = float(latest_data['RSI_14'].get(latest_data['RSI_14'].index.start))
+        datetime_obj_hour_fwd=getDateTime()+timedelta(hours=1)
       last_min=min
       historical_data = get_data(token,from_date,to_date,"5minute",historical_data)
       df = pd.DataFrame(historical_data)

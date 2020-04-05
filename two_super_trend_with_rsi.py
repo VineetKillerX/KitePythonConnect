@@ -71,7 +71,7 @@ def trade(token):
 				profit = 0.01
 				stop_loss = 0.005
 			else:
-				(holding,last_price,order_id)=place_orders(signal1,signal2,suptrenval1,suptrenval2,token,holding,last_price,rsi,index)
+				(holding,last_price,order_id)=place_orders(signal1,signal2,suptrenval1,suptrenval2,token,holding,last_price,rsi,index,order_id)
 		else:
 		  holding=stoper(token,last_price,profit,stop_loss,datetime_obj,holding,order_id)
 		time.sleep(1)		
@@ -87,7 +87,7 @@ def getDateTime():
 def place_orders(signal1,signal2,suptrenval1,suptrenval2,token,holding,last_price,rsi,index,order_id):
 	price = get_price(token,last_price)
 		#Stoping condition
-	if((signal1!=signal2 and (suptrenval2>price>suptrenval1  or  suptrenval1>price>suptrenval2) and holding!='') or (holding=='up' and suptrenval2=='down' and suptrenval1=='down') or (holding=='down' and suptrenval2=='up' and suptrenval1=='up')):
+	if((signal1!=signal2 and (suptrenval2>price>suptrenval1  or  suptrenval1>price>suptrenval2) and holding!='') or (holding=='up' and signal1=='down' and signal2=='down') or (holding=='down' and signal1=='up' and signal2=='up')):
 		flag='loss'
 		holding = ''
 		if(price-last_price>0):
@@ -151,3 +151,6 @@ def write_log(log,file_name=file_name):
 	f.write(log)	
 	f.close()	
 			
+			
+if __name__=='__main__':
+	trade("1510401")
