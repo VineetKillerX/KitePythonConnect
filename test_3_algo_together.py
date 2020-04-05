@@ -196,6 +196,7 @@ def stoper(token,last_price,profit,stop_loss,datetime_obj,holding,order_id,price
 def write_log(log,name=file_name):
     if(name=="holdings"):
         name=file_name
+        sendMessage(log)
     f=open(name,'a')    
     f.write(log)    
     f.close()    
