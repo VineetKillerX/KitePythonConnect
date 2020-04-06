@@ -23,7 +23,7 @@ pin=app_properties["pin"]
 def get_session():
     kite = KiteConnect(api_key,api_secret)
     url = kite.login_url()
-    driver = webdriver.Firefox()#webdriver.Chrome()
+    driver = webdriver.Chrome()
     driver.get(url)
     time.sleep(2)
     login_form = driver.find_element_by_css_selector('div.login-form')

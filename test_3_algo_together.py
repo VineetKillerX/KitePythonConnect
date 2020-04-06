@@ -15,7 +15,8 @@ csv_mapping=ap.csv_mapping
 from common.get_api_data import *
 api_key = app_properties['api_key']
 api_secret = app_properties['api_secret']
-file_name="holdings"
+token=''
+file_name=token+"_holdings"
 import pytz
 tz = pytz.timezone('Asia/Kolkata')
 rs1_trend_log="rsi_trend.csv"
@@ -35,8 +36,8 @@ rsi_prop={"range":14}
 
 def trade(token):
     print("token is started ",token)
-    profit = 0.05
-    stop_loss = 0.025
+    profit = 0.02
+    stop_loss = 0.01
     last_price ={"_1": 0.00,"_2":0.00,"_3":0.00}
     last_min=-1
     holding={"_1": "","_2":"","_3":""}
@@ -205,7 +206,9 @@ def write_log(log,name=file_name):
 
 
 if __name__=="__main__":
-    trade("1510401")
+    global token
+    token = '1510401'
+    trade(token)
 
 
 

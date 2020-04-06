@@ -1,6 +1,8 @@
 import requests
 import json
 from common.get_api_data import *
+import common.application as ap
+app_properties=ap.app_properties
 url = app_properties['slack_url']
 
 def sendMessage(message):
