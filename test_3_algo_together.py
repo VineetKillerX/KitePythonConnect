@@ -1,13 +1,8 @@
 import logging
-from kiteconnect import KiteConnect
-from kiteconnect import KiteTicker
+import os
 import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
 import indicators
-from datetime import datetime,timedelta 
-import time
-import multiprocessing
+from datetime import datetime,timedelta
 logging.basicConfig(level=logging.INFO)
 import common.application as ap
 app_properties=ap.app_properties
@@ -15,12 +10,14 @@ csv_mapping=ap.csv_mapping
 from common.get_api_data import *
 api_key = app_properties['api_key']
 api_secret = app_properties['api_secret']
-token=''
-file_name=token+"_holdings"
+token='1510401'
+os.makedirs(token,exist_ok=True)
+file_name="holdings"
 import pytz
 tz = pytz.timezone('Asia/Kolkata')
 rs1_trend_log="rsi_trend.csv"
 from SlackUtil import sendMessage
+logger = logging.getLogger('algo_tester')
 
 def getDateTime():
   datetime_obj_hour_fwd=datetime.now(tz)
@@ -35,7 +32,6 @@ rsi_prop={"range":14}
 
 
 def trade(token):
-    print("token is started ",token)
     profit = 0.02
     stop_loss = 0.01
     last_price ={"_1": 0.00,"_2":0.00,"_3":0.00}
@@ -195,9 +191,10 @@ def stoper(token,last_price,profit,stop_loss,datetime_obj,holding,order_id,price
 
 
 def write_log(log,name=file_name):
-    if(name=="holdings"):
+    if(name.endswith("holdings")):
         name=file_name
         sendMessage(log)
+    name=token+"/"+name
     f=open(name,'a')    
     f.write(log)    
     f.close()    
@@ -206,8 +203,6 @@ def write_log(log,name=file_name):
 
 
 if __name__=="__main__":
-    global token
-    token = '1510401'
     trade(token)
 
 
