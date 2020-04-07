@@ -190,10 +190,10 @@ def stoper(token,last_price,profit,stop_loss,datetime_obj,holding,order_id,price
     return (holding,order_id,last_price)  
 
 
-def write_log(log,name=file_name):
+def write_log(log,name=file_name): 
     if(name.endswith("holdings")):
         name=file_name
-        sendMessage(log)
+        sendMessage(file_name+","+log)
     name=token+"/"+name
     f=open(name,'a')    
     f.write(log)    
