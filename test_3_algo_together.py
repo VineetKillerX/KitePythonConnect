@@ -2,6 +2,7 @@ import logging
 import os
 import pandas as pd
 import indicators
+import sys
 from datetime import datetime,timedelta
 logging.basicConfig(level=logging.INFO)
 import common.application as ap
@@ -10,7 +11,7 @@ csv_mapping=ap.csv_mapping
 from common.get_api_data import *
 api_key = app_properties['api_key']
 api_secret = app_properties['api_secret']
-token='341249'
+token=str(sys.argv[1])
 os.makedirs(token,exist_ok=True)
 file_name="holdings"
 import pytz
