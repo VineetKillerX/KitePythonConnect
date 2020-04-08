@@ -76,7 +76,7 @@ def trade(token):
             for num in ["_1","_2","_3","_4"]:
                 global file_name
                 file_name=csv_mapping[num]
-                stoper(token,last_price[num],profit,stop_loss,datetime_obj,holding[num],order_id[num],price[num])
+                (holding[num],order_id[num],price[num])=stoper(token,last_price[num],profit,stop_loss,datetime_obj,holding[num],order_id[num],price[num])
         time.sleep(1)      
 
 def trade_one(token,last_price,rsi,signal,suptrenval,holding,index,order_id,price):
