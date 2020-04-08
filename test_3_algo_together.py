@@ -10,7 +10,7 @@ csv_mapping=ap.csv_mapping
 from common.get_api_data import *
 api_key = app_properties['api_key']
 api_secret = app_properties['api_secret']
-token='1510401'
+token='341249'
 os.makedirs(token,exist_ok=True)
 file_name="holdings"
 import pytz
@@ -34,13 +34,16 @@ rsi_prop={"range":14}
 def trade(token):
     profit = 0.02
     stop_loss = 0.01
-    last_price ={"_1": 0.00,"_2":0.00,"_3":0.00}
+    last_price ={"_1": 0.00,"_2":0.00,"_3":0.00,"_4":0.00}
     last_min=-1
-    holding={"_1": "","_2":"","_3":""}
-    order_id={"_1": "","_2":"","_3":""}
+    holding={"_1": "","_2":"","_3":"","_4":""}
+    order_id={"_1": "","_2":"","_3":"","_4":""}
     historical_data=""
     historical_data_rsi=""
+    historical_data_sup_2_hours=""
     rsi_2=0.0
+    signal_2hours=""
+    suptrenval_2hours=0.0
     while True:
         datetime_obj=getDateTime()
         min=int(str(datetime_obj).split(".")[0].split(":")[1])
@@ -63,13 +66,14 @@ def trade(token):
                 stop_loss = 0.005
             else:
                 trade_one(token,last_price,rsi,signal,suptrenval,holding,index,order_id,price)
-                rsi_2=trade_two(last_min,min,token,historical_data_rsi,last_price,rsi_2,signal,suptrenval,holding,index,order_id,price)
+                (historical_data_rsi,rsi_2)=trade_two(last_min,min,token,historical_data_rsi,last_price,rsi_2,signal,suptrenval,holding,index,order_id,price)
                 trade_three(token,last_price,rsi,signal,signal2,suptrenval,suptrenval2,holding,index,order_id,price)
-            write_log(str(rsi_2)+","+str(rsi)+","+str(signal)+","+str(signal2)+","+str(suptrenval)+","+str(suptrenval2)+","+str(datetime_obj)+"\n",rs1_trend_log)
+                (historical_data_sup_2_hours,signal_2hours,suptrenval_2hours)=trade_four(last_min,min,token,historical_data_sup_2_hours,last_price,rsi,signal,signal_2hours,suptrenval,suptrenval_2hours,holding,index,order_id,price)
+            write_log(str(rsi_2)+","+str(rsi)+","+str(signal)+","+str(signal2)+","+str(signal_2hours)+","+str(suptrenval)+","+str(suptrenval2)+","+str(suptrenval_2hours)+","+str(datetime_obj)+"\n",rs1_trend_log)
             last_min=min
         else:
             price = get_price_v1(token,last_price)
-            for num in ["_1","_2","_3"]:
+            for num in ["_1","_2","_3","_4"]:
                 global file_name
                 file_name=csv_mapping[num]
                 stoper(token,last_price[num],profit,stop_loss,datetime_obj,holding[num],order_id[num],price[num])
@@ -95,7 +99,7 @@ def trade_two(last_min,min,token,historical_data_rsi,last_price,rsi_2,signal,sup
         rsi_2=tail_dict['RSI_'+str(rsi_prop["range"])][index1]
         #datetime_obj_hour_fwd=getDateTime()+timedelta(hours=1)
     (holding[num],order_id[num],last_price[num])=place_orders_2(signal,suptrenval,token,holding[num],last_price[num],rsi_2,index,order_id[num],price[num])   
-    return rsi_2
+    return (historical_data_rsi,rsi_2)
 
 
 def trade_three(token,last_price,rsi,signal,signal2,suptrenval,suptrenval2,holding,index,order_id,price): 
@@ -103,6 +107,24 @@ def trade_three(token,last_price,rsi,signal,signal2,suptrenval,suptrenval2,holdi
     global file_name
     file_name=csv_mapping[num]
     (holding[num],order_id[num],last_price[num])=place_orders_3(signal,signal2,suptrenval,suptrenval2,token,holding[num],last_price[num],rsi,index,order_id[num],price[num])
+
+
+
+def trade_four(last_min,min,token,historical_data_sup_2_hours,last_price,rsi,signal,signal2,suptrenval,suptrenval2,holding,index,order_id,price): 
+    num="_4"
+    global file_name
+    file_name=csv_mapping[num]
+    if(last_min==-1 or  (min==15 and int(str(getDateTime()).split(".")[0].split(":")[0])%2==1)):
+        historical_data_sup_2_hours = get_data(token,from_date,to_date,"hour",historical_data_sup_2_hours)
+        historical_data_sup_2_hours_df=pd.DataFrame(historical_data_sup_2_hours)
+        df_rsi = indicators.SuperTrend(historical_data_sup_2_hours_df,super_trend_prop1['range'],super_trend_prop1['mult'],['open','high','low','close'])
+        tail_dict = df_rsi.tail(1).to_dict()
+        index1=list(tail_dict['open'].keys())[0]
+        signal2=tail_dict["STX_"+str(super_trend_prop1['range'])+"_"+str(super_trend_prop1['mult'])][index1]
+        suptrenval2=tail_dict["ST_"+str(super_trend_prop1['range'])+"_"+str(super_trend_prop1['mult'])][index1]
+    (holding[num],order_id[num],last_price[num])=place_orders_4(signal,signal2,suptrenval,suptrenval2,token,holding[num],last_price[num],rsi,index,order_id[num],price[num])
+    return (historical_data_sup_2_hours,signal2,suptrenval2)
+
 
 
 def place_orders_3(signal,signal2,suptrenval,suptrenval2,token,holding,last_price,rsi,index,order_id,price):
@@ -127,6 +149,30 @@ def place_orders_3(signal,signal2,suptrenval,suptrenval2,token,holding,last_pric
         holding = 'up'
         last_price = price
     return    (holding,order_id,last_price)  
+
+
+def place_orders_4(signal,signal2,suptrenval,suptrenval2,token,holding,last_price,rsi,index,order_id,price):
+        #Stoping condition
+    if((signal!=signal2 and holding!="") or (holding=='up' and signal=='down' and signal2=='down' and rsi<50) or (holding=='down' and signal=='up' and signal2=='up' and rsi>50)):
+        flag='loss'
+        holding = ''
+        if(price-last_price>0):
+            flag=='profit'
+        if(holding=='up'):
+            write_log(str(order_id)+","+"Sell"+","+str(token)+","+str(price)+","+flag+","+str(getDateTime())+"\n")
+        else:
+            write_log(str(order_id)+","+"Buy"+","+str(token)+","+str(price)+","+flag+","+str(getDateTime())+"\n")
+    if(signal=='down' and signal2=='down' and holding!='down' and rsi<50):
+        order_id=index
+        write_log(str(order_id)+","+"Sell"+","+str(token)+","+str(price)+",supertrend,"+str(getDateTime())+"\n")
+        holding = 'down'
+        last_price = price
+    elif(signal=='up' and signal2=='up' and holding!='up' and rsi>50):
+        order_id=index
+        write_log(str(order_id)+","+"Buy"+","+str(token)+","+str(price)+",supertrend,"+str(getDateTime())+"\n")
+        holding = 'up'
+        last_price = price
+    return    (holding,order_id,last_price)
 
 
     
