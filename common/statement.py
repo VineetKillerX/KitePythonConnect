@@ -1,10 +1,10 @@
 import pandas as pd
 import numpy as np
-from SlackUtil import sendMessage
+#from SlackUtil import sendMessage
 headers = ['OrderId', 'Action', 'StockId', 'Price', 'Signal', 'DateTime']
-
+total=0.00
 for i in ['1510401','3050241','779521','408065','356865','348929','341249']:
-    file_name = './'+i+'/holdings_2_sup_rsi.csv'
+    file_name = './'+i+'/new_holdings.csv'
     try:
         df = pd.read_csv(file_name, names=headers)
         mydf = df.groupby('OrderId').filter(lambda x: len(x) > 1)
@@ -14,6 +14,10 @@ for i in ['1510401','3050241','779521','408065','356865','348929','341249']:
         total_trades = statements.shape[0]
         total_profit_per_share = statements['Profit'].sum()
         message = "Total Trades Done Today for "+i+" is : "+str(total_trades)+" And Earned : "+str(total_profit_per_share)
-        sendMessage(message)
+        print(message)
+        total+=total_profit_per_share
+        #sendMessage(message)
     except:
         print("Error")
+
+print(total)

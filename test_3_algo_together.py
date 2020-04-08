@@ -46,7 +46,9 @@ def trade(token):
     signal_2hours=""
     suptrenval_2hours=0.0
     while True:
-        datetime_obj=getDateTime()
+        datetime_obj = getDateTime()
+        if (datetime_obj.hour == 15 and datetime_obj.minute > 30):
+            break
         min=int(str(datetime_obj).split(".")[0].split(":")[1])
         if(min%5==0 and (last_min==-1 or (min!=last_min and last_min!=-1))):
             historical_data = get_data(token,from_date,to_date,"5minute",historical_data)
@@ -115,7 +117,7 @@ def trade_four(last_min,min,token,historical_data_sup_2_hours,last_price,rsi,sig
     num="_4"
     global file_name
     file_name=csv_mapping[num]
-    if(last_min==-1 or  (min==15 and int(str(getDateTime()).split(".")[0].split(":")[0])%2==1)):
+    if(last_min==-1 or  (min==15 and int(str(getDateTime()).split(" ")[1].split(":")[0])%2==1)):
         historical_data_sup_2_hours = get_data(token,from_date,to_date,"hour",historical_data_sup_2_hours)
         historical_data_sup_2_hours_df=pd.DataFrame(historical_data_sup_2_hours)
         df_rsi = indicators.SuperTrend(historical_data_sup_2_hours_df,super_trend_prop1['range'],super_trend_prop1['mult'],['open','high','low','close'])
