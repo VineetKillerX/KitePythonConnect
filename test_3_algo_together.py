@@ -19,6 +19,7 @@ tz = pytz.timezone('Asia/Kolkata')
 rs1_trend_log="rsi_trend.csv"
 from SlackUtil import sendMessage
 logger = logging.getLogger('algo_tester')
+from simulator.place_order import place_order
 
 def getDateTime():
   datetime_obj_hour_fwd=datetime.now(tz)
@@ -29,16 +30,17 @@ from_date=str(datetime_obj_hour_fwd-timedelta(days=14)).split(" ")[0]
 to_date=str(datetime_obj_hour_fwd).split(" ")[0]
 super_trend_prop1={"range":7,"mult":3}
 super_trend_prop2={"range":7,"mult":2}
+super_trend_prop3={"range":7,"mult":1}
 rsi_prop={"range":14}
 
 
 def trade(token):
     profit = 0.02
     stop_loss = 0.01
-    last_price ={"_1": 0.00,"_2":0.00,"_3":0.00,"_4":0.00}
+    last_price ={"_2":0.00,"_3":0.00,"_4":0.00}
     last_min=-1
-    holding={"_1": "","_2":"","_3":"","_4":""}
-    order_id={"_1": "","_2":"","_3":"","_4":""}
+    holding={"_2":"","_3":"","_4":""}
+    order_id={"_2":"","_3":"","_4":""}
     historical_data=""
     historical_data_rsi=""
     historical_data_sup_2_hours=""
@@ -55,38 +57,35 @@ def trade(token):
             df = pd.DataFrame(historical_data)
             df = indicators.SuperTrend(df,super_trend_prop1['range'],super_trend_prop1['mult'],['open','high','low','close'])
             df = indicators.SuperTrend(df,super_trend_prop2['range'],super_trend_prop2['mult'],['open','high','low','close'])
+            df = indicators.SuperTrend(df, super_trend_prop3['range'], super_trend_prop3['mult'],['open', 'high', 'low', 'close'])
             df = indicators.RSI(df,'close',rsi_prop["range"])
             tail_dict=df.tail(1).to_dict()
             index=list(tail_dict['open'].keys())[0]
             signal=tail_dict["STX_"+str(super_trend_prop1['range'])+"_"+str(super_trend_prop1['mult'])][index]
             signal2=tail_dict["STX_"+str(super_trend_prop2['range'])+"_"+str(super_trend_prop2['mult'])][index]
+            signal3 = tail_dict["STX_" + str(super_trend_prop3['range']) + "_" + str(super_trend_prop3['mult'])][index]
             suptrenval=tail_dict["ST_"+str(super_trend_prop1['range'])+"_"+str(super_trend_prop1['mult'])][index]
             suptrenval2=tail_dict["ST_"+str(super_trend_prop2['range'])+"_"+str(super_trend_prop2['mult'])][index]
+            suptrenval3 = tail_dict["ST_" + str(super_trend_prop3['range']) + "_" + str(super_trend_prop3['mult'])][index]
             rsi=tail_dict['RSI_'+str(rsi_prop["range"])][index]
             price = get_price_v1(token,last_price)
             if (datetime_obj.hour == 15 and datetime_obj.minute>15):
                 profit = 0.01
                 stop_loss = 0.005
             else:
-                trade_one(token,last_price,rsi,signal,suptrenval,holding,index,order_id,price)
                 (historical_data_rsi,rsi_2)=trade_two(last_min,min,token,historical_data_rsi,last_price,rsi_2,signal,suptrenval,holding,index,order_id,price)
                 trade_three(token,last_price,rsi,signal,signal2,suptrenval,suptrenval2,holding,index,order_id,price)
-                (historical_data_sup_2_hours,signal_2hours,suptrenval_2hours)=trade_four(last_min,min,token,historical_data_sup_2_hours,last_price,rsi,signal,signal_2hours,suptrenval,suptrenval_2hours,holding,index,order_id,price)
-            write_log(str(rsi_2)+","+str(rsi)+","+str(signal)+","+str(signal2)+","+str(signal_2hours)+","+str(suptrenval)+","+str(suptrenval2)+","+str(suptrenval_2hours)+","+str(datetime_obj)+"\n",rs1_trend_log)
+                (historical_data_sup_2_hours,signal_2hours,suptrenval_2hours)=trade_four(last_min,min,token,historical_data_sup_2_hours,last_price,rsi,signal2,signal_2hours,suptrenval2,suptrenval_2hours,holding,index,order_id,price)
+            write_log(str(rsi_2)+","+str(rsi)+","+str(signal)+","+str(signal2)+","+str(signal_2hours)+","+str(signal3)+","+str(suptrenval)+","+str(suptrenval2)+","+str(suptrenval_2hours)+","+str(suptrenval3)+","+str(datetime_obj)+"\n",rs1_trend_log)
             last_min=min
         else:
             price = get_price_v1(token,last_price)
-            for num in ["_1","_2","_3","_4"]:
+            for num in ["_2","_3","_4"]:
                 global file_name
                 file_name=csv_mapping[num]
                 (holding[num],order_id[num],price[num])=stoper(token,last_price[num],profit,stop_loss,datetime_obj,holding[num],order_id[num],price[num])
         time.sleep(1)      
 
-def trade_one(token,last_price,rsi,signal,suptrenval,holding,index,order_id,price):
-    num='_1'
-    global file_name
-    file_name=csv_mapping[num]
-    (holding[num],order_id[num],last_price[num])=place_orders_2(signal,suptrenval,token,holding[num],last_price[num],rsi,index,order_id[num],price[num])
       
 def trade_two(last_min,min,token,historical_data_rsi,last_price,rsi_2,signal,suptrenval,holding,index,order_id,price): #rsi_2 is equivalent to rsi on 1 hours
     num='_2'
@@ -117,14 +116,14 @@ def trade_four(last_min,min,token,historical_data_sup_2_hours,last_price,rsi,sig
     num="_4"
     global file_name
     file_name=csv_mapping[num]
-    if(last_min==-1 or  (min==15 and int(str(getDateTime()).split(" ")[1].split(":")[0])%2==1)):
+    if(last_min==-1 or  (min==15 and int(str(getDateTime()).split(" ")[1].split(":")[0])%1==0)):
         historical_data_sup_2_hours = get_data(token,from_date,to_date,"hour",historical_data_sup_2_hours)
         historical_data_sup_2_hours_df=pd.DataFrame(historical_data_sup_2_hours)
-        df_rsi = indicators.SuperTrend(historical_data_sup_2_hours_df,super_trend_prop1['range'],super_trend_prop1['mult'],['open','high','low','close'])
+        df_rsi = indicators.SuperTrend(historical_data_sup_2_hours_df,super_trend_prop3['range'],super_trend_prop3['mult'],['open','high','low','close'])
         tail_dict = df_rsi.tail(1).to_dict()
         index1=list(tail_dict['open'].keys())[0]
-        signal2=tail_dict["STX_"+str(super_trend_prop1['range'])+"_"+str(super_trend_prop1['mult'])][index1]
-        suptrenval2=tail_dict["ST_"+str(super_trend_prop1['range'])+"_"+str(super_trend_prop1['mult'])][index1]
+        signal2=tail_dict["STX_"+str(super_trend_prop3['range'])+"_"+str(super_trend_prop3['mult'])][index1]
+        suptrenval2=tail_dict["ST_"+str(super_trend_prop3['range'])+"_"+str(super_trend_prop3['mult'])][index1]
     (holding[num],order_id[num],last_price[num])=place_orders_4(signal,signal2,suptrenval,suptrenval2,token,holding[num],last_price[num],rsi,index,order_id[num],price[num])
     return (historical_data_sup_2_hours,signal2,suptrenval2)
 
@@ -242,6 +241,9 @@ def stoper(token,last_price,profit,stop_loss,datetime_obj,holding,order_id,price
 def write_log(log,name=file_name): 
     if(name.endswith("holdings")):
         name=file_name
+    if(file_name=='holdings_sup_1_rsi.csv'):
+        action = log.split(",")[1]
+        place_order(action,'Axis Bank',1000)
         sendMessage(file_name+","+log)
     name=token+"/"+name
     f=open(name,'a')    

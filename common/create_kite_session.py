@@ -51,4 +51,5 @@ def get_session():
     data = kite.generate_session(request_token,api_secret)
     access_token = data["access_token"]
     kite.set_access_token(access_token)
+    driver.close()
     return kite
