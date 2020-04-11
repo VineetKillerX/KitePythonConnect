@@ -8,7 +8,7 @@ from common.get_api_data import *
 logging.basicConfig(level=logging.INFO)
 import common.application as ap
 import pytz
-
+from simulator import place_order as simulator
 app_properties = ap.app_properties
 token_mappings = ap.token_mappings
 csv_mapping = ap.csv_mapping
@@ -51,7 +51,7 @@ def write_log(supertrend, rsi, rsi_slope, wma20, wma5, wma14, last_close, token,
                 current_price) + ',' + str(action) + ','
             order_id = ''
             holding = ''
-        place_order(action, token_mappings[token], 1000)
+        simulator.place_order(action, token_mappings[token], 1000)
     name = token + "/" + name
     f = open(name, 'a')
     if log == '':
