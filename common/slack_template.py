@@ -1,5 +1,5 @@
 import json
-from SlackUtil import sendMessage
+from common.SlackUtil import sendMessage
 with open('./common/mappings.json', 'r') as f:
     mapping_json = json.load(f)
 

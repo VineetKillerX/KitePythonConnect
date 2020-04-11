@@ -174,7 +174,7 @@ def ATR(df, period, ohlc=['Open', 'High', 'Low', 'Close']):
     
     return df
 
-def SuperTrend(df, period, multiplier, ohlc=['Open', 'High', 'Low', 'Close']):
+def SuperTrend(df, period, multiplier, ohlc=['open', 'high', 'low', 'close']):
     """
     Function to compute SuperTrend
     
@@ -319,7 +319,29 @@ def BBand(df, base='Close', period=20, multiplier=2):
     
     return df
 
-def RSI(df, base="Close", period=21):
+def vwma(df, window):
+   df['VWMA_'+str(window)] = df.apply(lambda x: x.close * x.volume, axis=1).rolling(window).sum() / df.volume.rolling(window).sum()
+   return df
+
+
+def price_volume_trend(data, trend_periods=21, close_col='close', vol_col='volume'):
+    for index, row in data.iterrows():
+        if index > 0:
+            try:
+                last_val = data.at[index - 1, 'pvt']
+            except:
+                last_val=0
+            last_close = data.at[index - 1, close_col]
+            today_close = row[close_col]
+            today_vol = row[vol_col]
+            current_val = last_val + (today_vol * (today_close - last_close) / last_close)
+        else:
+            current_val = row[vol_col]
+    data.set_value(index, 'pvt', current_val)
+    data['pvt_ema' + str(trend_periods)] = data['pvt'].ewm(ignore_na=False, min_periods=0, com=trend_periods,adjust=True).mean()
+    return data
+
+def RSI(df, base="close", period=8):
     """
     Function to compute Relative Strength Index (RSI)
     
@@ -397,3 +419,5 @@ def Ichimoku(df, ohlc=['Open', 'High', 'Low', 'Close'], param=[9, 26, 52, 26]):
     df[chikou_span_column] = close.shift(-1 * chikou_span_period)
     
     return df
+
+
