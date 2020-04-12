@@ -2,13 +2,13 @@ from selenium import webdriver
 import time
 
 import common.application as ap
-token_mappings = ap.token_mappings
+simulator_props = ap.simulator_props
 
 
 ## inputs
 url = 'https://moneybhai.moneycontrol.com'
-email = token_mappings['email']
-pwd = token_mappings['pwd']
+email = simulator_props['email']
+pwd = simulator_props['pwd']
 
 
 def login(email, pwd,counter=0):
