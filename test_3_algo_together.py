@@ -1,7 +1,7 @@
 import logging
 import os
 import pandas as pd
-import indicators
+from common import indicators
 import sys
 from datetime import datetime,timedelta
 logging.basicConfig(level=logging.INFO)
@@ -17,7 +17,7 @@ file_name="holdings"
 import pytz
 tz = pytz.timezone('Asia/Kolkata')
 rs1_trend_log="rsi_trend.csv"
-from SlackUtil import sendMessage
+from common.SlackUtil import sendMessage
 logger = logging.getLogger('algo_tester')
 from simulator.place_order import place_order
 
@@ -55,10 +55,10 @@ def trade(token):
         if(min%5==0 and (last_min==-1 or (min!=last_min and last_min!=-1))):
             historical_data = get_data(token,from_date,to_date,"5minute",historical_data)
             df = pd.DataFrame(historical_data)
-            df = indicators.SuperTrend(df,super_trend_prop1['range'],super_trend_prop1['mult'],['open','high','low','close'])
-            df = indicators.SuperTrend(df,super_trend_prop2['range'],super_trend_prop2['mult'],['open','high','low','close'])
-            df = indicators.SuperTrend(df, super_trend_prop3['range'], super_trend_prop3['mult'],['open', 'high', 'low', 'close'])
-            df = indicators.RSI(df,'close',rsi_prop["range"])
+            df = indicators.SuperTrend(df, super_trend_prop1['range'], super_trend_prop1['mult'], ['open', 'high', 'low', 'close'])
+            df = indicators.SuperTrend(df, super_trend_prop2['range'], super_trend_prop2['mult'], ['open', 'high', 'low', 'close'])
+            df = indicators.SuperTrend(df, super_trend_prop3['range'], super_trend_prop3['mult'], ['open', 'high', 'low', 'close'])
+            df = indicators.RSI(df, 'close', rsi_prop["range"])
             tail_dict=df.tail(1).to_dict()
             index=list(tail_dict['open'].keys())[0]
             signal=tail_dict["STX_"+str(super_trend_prop1['range'])+"_"+str(super_trend_prop1['mult'])][index]
@@ -95,7 +95,7 @@ def trade_two(last_min,min,token,historical_data_rsi,last_price,rsi_2,signal,sup
     if(last_min==-1 or  min==15):
         historical_data_rsi = get_data(token,from_date,to_date,"hour",historical_data_rsi)
         historical_data_rsi_df=pd.DataFrame(historical_data_rsi)
-        df_rsi = indicators.RSI(historical_data_rsi_df,'close',14)
+        df_rsi = indicators.RSI(historical_data_rsi_df, 'close', 14)
         tail_dict = df_rsi.tail(1).to_dict()
         index1=list(tail_dict['open'].keys())[0]
         rsi_2=tail_dict['RSI_'+str(rsi_prop["range"])][index1]
@@ -119,7 +119,7 @@ def trade_four(last_min,min,token,historical_data_sup_2_hours,last_price,rsi,sig
     if(last_min==-1 or  (min==15 and int(str(getDateTime()).split(" ")[1].split(":")[0])%1==0)):
         historical_data_sup_2_hours = get_data(token,from_date,to_date,"hour",historical_data_sup_2_hours)
         historical_data_sup_2_hours_df=pd.DataFrame(historical_data_sup_2_hours)
-        df_rsi = indicators.SuperTrend(historical_data_sup_2_hours_df,super_trend_prop3['range'],super_trend_prop3['mult'],['open','high','low','close'])
+        df_rsi = indicators.SuperTrend(historical_data_sup_2_hours_df, super_trend_prop3['range'], super_trend_prop3['mult'], ['open', 'high', 'low', 'close'])
         tail_dict = df_rsi.tail(1).to_dict()
         index1=list(tail_dict['open'].keys())[0]
         signal2=tail_dict["STX_"+str(super_trend_prop3['range'])+"_"+str(super_trend_prop3['mult'])][index1]
