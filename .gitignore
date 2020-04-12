@@ -1,3 +1,6 @@
 common/application.py
 common/__pycache__/*
-
+common/__pycache__/create_kite_session.cpython-37.pyc
+__pycache__/
+simulator/__pycache__/
+.idea/
