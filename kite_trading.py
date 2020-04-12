@@ -90,14 +90,16 @@ def place_order(signal):
         write_log('BUY')
     elif supertrend == 'down' and 20 <= rsi <= 40 and rsi_slope < -0.5 and wma5 <= wma20 and holding == '' and order_id == '' and signal == '':
         write_log('SELL')
-    elif holding != '' and order_id != '' and signal == '' and swing:
-        write_log('SELL') if holding == 'up' else write_log('BUY')
     elif holding != '' and order_id != '' and signal == '':
         write_log('HOLD')
     elif holding != '' and order_id != '' and signal != '':
         write_log(signal)
     else:
         write_log('NONE')
+    if holding != '' and order_id != '' and signal == '' and swing:
+        action = 'SELL' if holding == 'up' else 'BUY'
+        slack_msg = action + " : " + str(token_mappings[token]) + " @ " + str(current_price) + " for Order : "+str(order_id)
+        sendMessage(slack_msg)
 
 
 def stopper():
