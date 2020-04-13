@@ -31,8 +31,12 @@ for token in tokens:
 while True:
     date = getDateTime()
     if (date.hour >= 15 and date.minute > 30) or (date.hour <= 9 and date.minute <= 10):
-        print("Market Not Available at this moment, Please Try Again from 09:10 till 15:30")
-        break
+        if date.hour == 9:
+            print("Market Not Available at this moment, Please Try Again in few minutes")
+            time.sleep(60)
+        else:
+            print("Market Not Available at this moment, Please Try Again from 09:10 till 15:30")
+            time.sleep(60*60)
     else:
         for process in processes:
             pid = process.pid

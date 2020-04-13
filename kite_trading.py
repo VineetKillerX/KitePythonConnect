@@ -25,7 +25,7 @@ tz = pytz.timezone('Asia/Kolkata')
 logger = logging.getLogger('algo_tester')
 # global define
 profit = 0.019
-stop_loss = 0.095
+stop_loss = 0.0095
 historical_data = ""
 supertrend = ""
 rsi = 0.00
@@ -41,6 +41,7 @@ current_price = 0.00
 holding = ""
 order_id = ""
 swing = False
+flag = ''
 
 
 def getDateTime():
@@ -56,7 +57,7 @@ to_date = str(datetime_obj_hour_fwd).split(" ")[0]
 def create_log(action):
     log = str(order_id) + ',' + str(supertrend) + ',' + str(rsi) + ',' + str(rsi_slope) + ',' + str(
         wma20) + ',' + str(wma5) + ',' + str(wma14) + ',' + str(last_close) + ',' + str(
-        current_price) + ',' + str(action) + ',' + str(holding)+"\n"
+        current_price) + ',' + str(action) + ',' + str(holding)+','+str(last_price)+"\n"
     return log
 
 
@@ -67,16 +68,18 @@ def write_log(action, name=file_name):
     if action == 'BUY' or action == 'SELL':
         simulator.place_order(action, token_mappings[token], 1000)
         slack_msg = action + " : "+str(token_mappings[token]) + " @ "+str(current_price)
-        sendMessage(slack_msg)
         if order_id == '':
             datetime_obj = getDateTime()
             order_id = str(datetime_obj.hour) + str(datetime_obj.minute) + str(datetime_obj.second)
             holding = 'up' if action == 'BUY' else 'down'
+            last_price = current_price
             log = create_log(action)
         else:
             holding = ''
+            slack_msg = slack_msg + ' for Order Id : '+str(order_id) + ' in : '+str(flag)
             log = create_log(action)
             order_id = ''
+        sendMessage(slack_msg)
     name = token + "/" + name
     f = open(name, 'a')
     if log == '':
@@ -98,33 +101,39 @@ def place_order(signal):
         write_log('NONE')
     if holding != '' and order_id != '' and signal == '' and swing:
         action = 'SELL' if holding == 'up' else 'BUY'
-        slack_msg = action + " : " + str(token_mappings[token]) + " @ " + str(current_price) + " for Order : "+str(order_id)
+        slack_msg = action + " : " + str(token_mappings[token]) + " @ " + str(current_price) + " for Order : "+str(order_id)+" : Swing"
         sendMessage(slack_msg)
 
 
 def stopper():
-    global last_price
+    global last_price,flag
+    flag = ''
     current_price = get_price(token, last_price)
     datetime_obj = getDateTime()
     if holding == 'up':
         temp_profit = (current_price - last_price) / last_price
         temp_loss = (last_price - current_price) / last_price
         if temp_profit >= profit:
+            flag = 'Profit'
             place_order('SELL')
         elif temp_loss > stop_loss:
-            place_order('BUY')
+            flag = 'Loss'
+            place_order('SELL')
         if datetime_obj.hour == 15 and datetime_obj.minute > 20:
+            flag = 'Market Close : Profit/Loss'
             place_order('SELL')
     elif holding == 'down':
         temp_profit = (last_price - current_price) / last_price
         temp_loss = (current_price - last_price) / last_price
         if temp_profit >= profit:
-            place_order('SELL')
+            flag = 'Profit'
+            place_order('BUY')
         elif temp_loss > stop_loss:
+            flag = 'Loss'
             place_order('BUY')
         if datetime_obj.hour == 15 and datetime_obj.minute > 20:
-            place_order('SELL')
-    last_price = current_price
+            flag = 'Market Close : Profit/Loss'
+            place_order('BUY')
 
 
 def get_history_data():
@@ -190,7 +199,7 @@ def trade():
 
 
 def init():
-    global order_id, holding
+    global order_id, holding,last_price
     name = token + "/trades.csv"
     try:
         with open(name, 'r') as f:
@@ -198,6 +207,7 @@ def init():
             last_line = lines[-1]
             order_id = last_line.split(",")[0]
             holding = last_line.split(",")[10]
+            last_price = float(last_line.split(",")[11])
             trade()
     except:
         trade()
