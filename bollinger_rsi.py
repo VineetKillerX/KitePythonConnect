@@ -27,12 +27,8 @@ logger = logging.getLogger('algo_tester')
 profit = 0.019
 stop_loss = 0.0095
 historical_data = ""
-supertrend = ""
 rsi = 0.00
 rsi_slope = 0.00
-wma20 = 0.00
-wma5 = 0.00
-wma14 = 0.00
 last_close = 0.00
 last_high = 0.00
 last_low = 0.00
@@ -59,14 +55,14 @@ to_date = str(datetime_obj_hour_fwd).split(" ")[0]
 def create_log(action):
     log = str(order_id) + ',' + str(supertrend) + ',' + str(rsi) + ',' + str(rsi_slope) + ',' + str(
         wma20) + ',' + str(wma5) + ',' + str(wma14) + ',' + str(last_close) + ',' + str(
-        current_price) + ',' + str(action) + ',' + str(holding)+','+str(last_price)+"\n"
+        current_price) + ',' + str(action) + ',' + str(holding)+','+str(last_price)+","+str(sma_triggered)+","+str(activation)+","+str(rsi_count)+"\n"
     return log
 
 
 def write_log(action, name=file_name):
     global last_close, last_price, order_id, holding,current_price
     log = ''
-    current_price = get_price(token, last_close)
+    current_price = get_price(token, last_price)
     if action == 'BUY' or action == 'SELL':
         simulator.place_order(action, token_mappings[token], 1000)
         slack_msg = action + " : "+str(token_mappings[token]) + " @ "+str(current_price)
@@ -139,8 +135,9 @@ def stopper():
 
 
 def get_history_data():
-    global historical_data, rsi, rsi_slope, last_close, swing,last_high,last_low,sma,ub,mb,lb,band_diff_trend
+    global historical_data, rsi, rsi_slope, last_close, swing,last_high,last_low,sma,ub,mb,lb,band_diff_trend,current_price
     swing = False
+    current_price = get_price(token, last_close)
     historical_data = get_data(token, from_date, to_date, "10minute", historical_data)
     df = pd.DataFrame(historical_data)
     df = indicators.RSI(df,period=14)
@@ -195,11 +192,8 @@ def trade():
         minutes = int(str(datetime_obj).split(".")[0].split(":")[1])
         if minutes % 10 == 5 and (last_min == -1 or (minutes != last_min and last_min != -1)):
             get_history_data()
-#             if minutes == 15 and datetime_obj.hour == 9:
-#                 if (abs(last_high - last_low) / last_close) >= 0.01:
-#                     time.sleep(5 * 60)
-            activate_signal()
             enter_in_market()
+            exit_from_market()
             last_min = minutes
         else:
             stopper()
@@ -216,6 +210,9 @@ def init():
             order_id = last_line.split(",")[0]
             holding = last_line.split(",")[10]
             last_price = float(last_line.split(",")[11])
+            sma_triggered=bool(last_line.split(",")[12])
+            activation=last_line.split(",")[13]
+            rsi_count=last_line.split(",")[14]
             trade()
     except:
         trade()
@@ -223,21 +220,22 @@ def init():
 
 def activate_signal():
     global activation,rsi_count
-    if(rsi>70 and current_price > ub and holding==''):
+    if(rsi>70 and current_price > ub  ):
         rsi_count=rsi_count+1
         activation='high'
-    elif(rsi<30 and current_price < lb and holding==''):
+    elif(rsi<30 and current_price < lb ):
         activation='low'
         rsi_count=rsi_count+1
-    elif(rsi_count>1):
-        activation=''
-        rsi_count=0
+    elif(rsi_count==1):
+        reset()
 
 def enter_in_market():
-    if activation == 'high' and rsi<=70 and last_low <= up and rsi_count >1: # we need to check the price also with the upper bolinger band.
-        write_log("SELL")
-    if activation == 'low' and rsi>=30 and last_high >= low and rsi_count >1:  # we need to check the price also with the lower bolinger band.
-        write_log("BUY")
+    if(holding==''):
+        activate_signal()
+        if activation == 'high' and rsi<=70 and last_low <= up and rsi_count >1: # we need to check the price also with the upper bolinger band.
+            write_log("SELL")
+        if activation == 'low' and rsi>=30 and last_high >= low and rsi_count >1:  # we need to check the price also with the lower bolinger band.
+            write_log("BUY")
         
 # def identify_divergence():
 #     if band_diff_trend()
@@ -247,13 +245,20 @@ def is_sma_triggered():
         sma_triggered=True
         
 def exit_from_market():
-    if(sma_triggered and activation=='high' and (last_close > mb or last_low<=lb)):
-        sma_triggered=False
-        write_log('SELL')
-    elif(sma_triggered and activation=='low' and (last_close < mb or last_high<=ub)):
-        sma_triggered=False
-        write_log('BUY')
+    if(holding!=''):
+        is_sma_triggered()
+        if(sma_triggered and activation=='high' and (last_close > mb or last_low<=lb)):
+            reset()
+            write_log('SELL')
+        elif(sma_triggered and activation=='low' and (last_close < mb or last_high<=ub)):
+            reset()
+            write_log('BUY')
          
+def reset():
+    global sma_triggered,activation,rsi_count
+    sma_triggered=False
+    activation=""
+    rsi_count=0
         
     
 # def check_the_trend():
