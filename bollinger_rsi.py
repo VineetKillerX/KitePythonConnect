@@ -73,7 +73,7 @@ def write_log(action, name=file_name):
             log = create_log(action)
         else:
             holding = ''
-            slack_msg = slack_msg + ' for Order Id : '+str(order_id) + ' in : '+str(flag)
+            slack_msg = slack_msg + ' for Order Id : '+str(order_id) + ' in : '+str(flag) +" : Bollinger bands"
             log = create_log(action)
             order_id = ''
         sendMessage(slack_msg)
