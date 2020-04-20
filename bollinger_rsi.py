@@ -236,10 +236,11 @@ def enter_in_market():
             write_log("SELL")
         elif activation == 'low' and rsi>=30 and last_high >= low and rsi_count >1:  # we need to check the price also with the lower bolinger band.
             write_log("BUY")
-        elif holding != '' and order_id != '':
-            write_log("HOLD")
         else:
             write_log("NONE")
+    elif holding != '' and order_id != '':
+            write_log("HOLD")   
+    
         
 # def identify_divergence():
 #     if band_diff_trend()
