@@ -18,7 +18,7 @@ csv_mapping = ap.csv_mapping
 
 api_key = app_properties['api_key']
 api_secret = app_properties['api_secret']
-token = str(sys.argv[1])
+token =str(sys.argv[1])
 os.makedirs(token, exist_ok=True)
 file_name = "trades.csv"
 tz = pytz.timezone('Asia/Kolkata')
@@ -54,7 +54,7 @@ to_date = str(datetime_obj_hour_fwd).split(" ")[0]
 
 def create_log(action):
     log = str(order_id) +',' + str(rsi) + ',' + str(rsi_slope) + ',' + str(last_close) + ',' + str(
-        current_price) + ',' + str(action) + ',' + str(holding)+','+str(last_price)+","+str(sma_triggered)+","+str(activation)+","+str(rsi_count)+"\n"
+        current_price) + ',' + str(action) + ',' + str(holding)+','+str(last_price)+","+str(sma_triggered)+","+str(activation)+","+str(rsi_count)+","+str(getDateTime())+"\n"
     return log
 
 
@@ -191,7 +191,7 @@ def trade():
         minutes = int(str(datetime_obj).split(".")[0].split(":")[1])
         if minutes % 10 == 5 and (last_min == -1 or (minutes != last_min and last_min != -1)):
             get_history_data()
-            if (datetime_obj.hour >= 15 and datetime_obj.minute > 0):
+            if (datetime_obj.hour < 15):
                 enter_in_market()
             exit_from_market()
             last_min = minutes
@@ -208,11 +208,11 @@ def init():
             lines = f.read().splitlines()
             last_line = lines[-1]
             order_id = last_line.split(",")[0]
-            holding = last_line.split(",")[10]
-            last_price = float(last_line.split(",")[11])
-            sma_triggered=bool(last_line.split(",")[12])
-            activation=last_line.split(",")[13]
-            rsi_count=last_line.split(",")[14]
+            holding = last_line.split(",")[6]
+            last_price = float(last_line.split(",")[7])
+            sma_triggered=bool(last_line.split(",")[8])
+            activation=last_line.split(",")[9]
+            rsi_count=last_line.split(",")[10]
             trade()
     except:
         trade()
