@@ -53,8 +53,7 @@ to_date = str(datetime_obj_hour_fwd).split(" ")[0]
 
 
 def create_log(action):
-    log = str(order_id) + ',' + str(supertrend) + ',' + str(rsi) + ',' + str(rsi_slope) + ',' + str(
-        wma20) + ',' + str(wma5) + ',' + str(wma14) + ',' + str(last_close) + ',' + str(
+    log = str(order_id) +',' + str(rsi) + ',' + str(rsi_slope) + ',' + str(last_close) + ',' + str(
         current_price) + ',' + str(action) + ',' + str(holding)+','+str(last_price)+","+str(sma_triggered)+","+str(activation)+","+str(rsi_count)+"\n"
     return log
 
@@ -116,10 +115,10 @@ def stopper():
 #             place_order('SELL')
         if temp_loss > stop_loss:
             flag = 'Loss'
-            place_order('SELL')
+            write_log('SELL')
         if datetime_obj.hour == 15 and datetime_obj.minute > 20:
             flag = 'Market Close : Profit/Loss'
-            place_order('SELL')
+            write_log('SELL')
     elif holding == 'down':
         temp_profit = (last_price - current_price) / last_price
         temp_loss = (current_price - last_price) / last_price
@@ -128,10 +127,10 @@ def stopper():
 #             place_order('BUY')
         if temp_loss > stop_loss:
             flag = 'Loss'
-            place_order('BUY')
+            write_log('BUY')
         if datetime_obj.hour == 15 and datetime_obj.minute > 20:
             flag = 'Market Close : Profit/Loss'
-            place_order('BUY')
+            write_log('BUY')
 
 
 def get_history_data():
@@ -186,13 +185,14 @@ def trade():
     last_min = -1
     while True:
         datetime_obj = getDateTime()
-        if (datetime_obj.hour >= 15 and datetime_obj.minute > 0) or (
+        if (datetime_obj.hour >= 15 and datetime_obj.minute > 28) or (
                 datetime_obj.hour <= 9 and datetime_obj.minute <= 10):
             raise Exception('Market Not Tradable at this moment')
         minutes = int(str(datetime_obj).split(".")[0].split(":")[1])
         if minutes % 10 == 5 and (last_min == -1 or (minutes != last_min and last_min != -1)):
             get_history_data()
-            enter_in_market()
+            if (datetime_obj.hour >= 15 and datetime_obj.minute > 0):
+                enter_in_market()
             exit_from_market()
             last_min = minutes
         else:
@@ -234,8 +234,12 @@ def enter_in_market():
         activate_signal()
         if activation == 'high' and rsi<=70 and last_low <= up and rsi_count >1: # we need to check the price also with the upper bolinger band.
             write_log("SELL")
-        if activation == 'low' and rsi>=30 and last_high >= low and rsi_count >1:  # we need to check the price also with the lower bolinger band.
+        elif activation == 'low' and rsi>=30 and last_high >= low and rsi_count >1:  # we need to check the price also with the lower bolinger band.
             write_log("BUY")
+        elif holding != '' and order_id != '':
+            write_log("HOLD")
+        else:
+            write_log("NONE")
         
 # def identify_divergence():
 #     if band_diff_trend()
@@ -245,14 +249,17 @@ def is_sma_triggered():
         sma_triggered=True
         
 def exit_from_market():
+    global flag
     if(holding!=''):
         is_sma_triggered()
         if(sma_triggered and activation=='high' and (last_close > mb or last_low<=lb)):
-            reset()
-            write_log('SELL')
-        elif(sma_triggered and activation=='low' and (last_close < mb or last_high<=ub)):
-            reset()
+            flag = 'Profit[Autotrigered]' if last_price > current_price  else 'LOSS[Autotrigered]'
             write_log('BUY')
+            reset()
+        elif(sma_triggered and activation=='low' and (last_close < mb or last_high<=ub)):
+            flag = 'Profit[Autotrigered]' if last_price < current_price  else 'LOSS[Autotrigered]'
+            write_log('SELL')
+            reset()
          
 def reset():
     global sma_triggered,activation,rsi_count
