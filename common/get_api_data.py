@@ -6,7 +6,7 @@ def get_data(token,from_date,to_date,interval,historical_data,counter=0):
     except:
         if(counter<=3):
             print("get_data exception ",counter)
-            return get_data(type_of_data,token,from_date,to_date,interval,historical_data,counter+1)
+            return get_data(token,from_date,to_date,interval,historical_data,counter+1)
         else:
             print("returning old history_df ")
             return historical_data
