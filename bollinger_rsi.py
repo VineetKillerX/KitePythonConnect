@@ -42,6 +42,7 @@ interval=10
 rsi_count=0
 sma_triggered=False
 activation=''
+last_candle_type=""
 def getDateTime():
     datetime_obj_hour_fwd = datetime.now(tz)
     return datetime_obj_hour_fwd
@@ -54,7 +55,8 @@ to_date = str(datetime_obj_hour_fwd).split(" ")[0]
 
 def create_log(action):
     log = str(order_id) +',' + str(rsi) + ',' + str(rsi_slope) + ',' + str(last_close) + ',' + str(
-        current_price) + ',' + str(action) + ',' + str(holding)+','+str(last_price)+","+str(sma_triggered)+","+str(activation)+","+str(rsi_count)+","+str(getDateTime())+"\n"
+        current_price) + ',' + str(action) + ',' + str(holding)+','+str(last_price)+","+str(sma_triggered)+","+str(
+            activation)+","+str(rsi_count)+","+str(getDateTime())+","+str(last_candle_type)+"\n"
     return log
 
 
@@ -213,6 +215,7 @@ def init():
             sma_triggered=bool(last_line.split(",")[8])
             activation=last_line.split(",")[9]
             rsi_count=last_line.split(",")[10]
+            last_candle_type=last_line.split(",")[12]
             trade()
     except:
         trade()
@@ -230,12 +233,21 @@ def activate_signal():
         reset()
 
 def enter_in_market():
+
     if(holding==''):
         activate_signal()
         if activation == 'high' and rsi<=70 and last_low <= up and rsi_count >1: # we need to check the price also with the upper bolinger band.
             write_log("SELL")
         elif activation == 'low' and rsi>=30 and last_high >= low and rsi_count >1:  # we need to check the price also with the lower bolinger band.
             write_log("BUY")
+        elif(band_diff_trend>0 and 30<rsi<70 and (last_low <= up or last_high >= low)):
+            check_sma_dir()
+            if(candle_type=='green'):
+                write_log("BUY")
+            elif(candle_type=='red'):   
+                write_log("SELL")
+            
+            
         else:
             write_log("NONE")
     elif holding != '' and order_id != '':
@@ -244,10 +256,33 @@ def enter_in_market():
         
 # def identify_divergence():
 #     if band_diff_trend()
+
+def check_sma_dir():
+    global sma7_direction,sma_direction
+    if sma_7 < current_price:
+        sma7_direction='below'
+    elif  current_price> sma_7:
+        sma7_direction='above'
+    if current_price> mb:
+        sma_direction='below'
+    elif current_price< mb:
+        sma_direction='above'
+
+def check_candle():
+    global last_candle_type
+    if(last_close>last_open):
+        last_candle_type='green'
+    else:
+        last_candle_type='red'
 def is_sma_triggered():
     global sma_triggered
     if((activation=='high' and last_low<mb)or (activation=='low' and last_high>mb)):
         sma_triggered=True
+
+def is_7sma_triggered():
+    global sma7_triggered
+    if((activation=='high' and last_low<mb)or (activation=='low' and last_high>mb)):
+        sma7_triggered=True
         
 def exit_from_market():
     global flag
@@ -261,6 +296,8 @@ def exit_from_market():
             flag = 'Profit[Autotrigered]' if last_price < current_price  else 'LOSS[Autotrigered]'
             write_log('SELL')
             reset()
+def exit_from_market_2nd_phase():
+    
          
 def reset():
     global sma_triggered,activation,rsi_count
