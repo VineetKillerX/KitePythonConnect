@@ -43,6 +43,7 @@ Usage :
     MACD(df)
 """
 
+
 def HA(df, ohlc=['Open', 'High', 'Low', 'Close']):
     """
     Function to compute Heiken Ashi Candles (HA)
@@ -63,7 +64,7 @@ def HA(df, ohlc=['Open', 'High', 'Low', 'Close']):
     ha_high = 'HA_' + ohlc[1]
     ha_low = 'HA_' + ohlc[2]
     ha_close = 'HA_' + ohlc[3]
-    
+
     df[ha_close] = (df[ohlc[0]] + df[ohlc[1]] + df[ohlc[2]] + df[ohlc[3]]) / 4
 
     df[ha_open] = 0.00
@@ -72,11 +73,12 @@ def HA(df, ohlc=['Open', 'High', 'Low', 'Close']):
             df[ha_open].iat[i] = (df[ohlc[0]].iat[i] + df[ohlc[3]].iat[i]) / 2
         else:
             df[ha_open].iat[i] = (df[ha_open].iat[i - 1] + df[ha_close].iat[i - 1]) / 2
-            
-    df[ha_high]=df[[ha_open, ha_close, ohlc[1]]].max(axis=1)
-    df[ha_low]=df[[ha_open, ha_close, ohlc[2]]].min(axis=1)
+
+    df[ha_high] = df[[ha_open, ha_close, ohlc[1]]].max(axis=1)
+    df[ha_low] = df[[ha_open, ha_close, ohlc[2]]].min(axis=1)
 
     return df
+
 
 def SMA(df, base, target, period):
     """
@@ -97,6 +99,7 @@ def SMA(df, base, target, period):
 
     return df
 
+
 def STDDEV(df, base, target, period):
     """
     Function to compute Standard Deviation (STDDEV)
@@ -116,6 +119,7 @@ def STDDEV(df, base, target, period):
 
     return df
 
+
 def EMA(df, base, target, period, alpha=False):
     """
     Function to compute Exponential Moving Average (EMA)
@@ -132,16 +136,17 @@ def EMA(df, base, target, period, alpha=False):
     """
 
     con = pd.concat([df[:period][base].rolling(window=period).mean(), df[period:][base]])
-    
+
     if (alpha == True):
         # (1 - alpha) * previous_val + alpha * current_val where alpha = 1 / period
         df[target] = con.ewm(alpha=1 / period, adjust=False).mean()
     else:
         # ((current_val - previous_val) * coeff) + previous_val where coeff = 2 / (period + 1)
         df[target] = con.ewm(span=period, adjust=False).mean()
-    
+
     df[target].fillna(0, inplace=True)
     return df
+
 
 def ATR(df, period, ohlc=['Open', 'High', 'Low', 'Close']):
     """
@@ -164,15 +169,16 @@ def ATR(df, period, ohlc=['Open', 'High', 'Low', 'Close']):
         df['h-l'] = df[ohlc[1]] - df[ohlc[2]]
         df['h-yc'] = abs(df[ohlc[1]] - df[ohlc[3]].shift())
         df['l-yc'] = abs(df[ohlc[2]] - df[ohlc[3]].shift())
-         
+
         df['TR'] = df[['h-l', 'h-yc', 'l-yc']].max(axis=1)
-         
+
         df.drop(['h-l', 'h-yc', 'l-yc'], inplace=True, axis=1)
 
     # Compute EMA of true range using ATR formula after ignoring first row
     EMA(df, 'TR', atr, period, alpha=True)
-    
+
     return df
+
 
 def SuperTrend(df, period, multiplier, ohlc=['open', 'high', 'low', 'close']):
     """
@@ -195,7 +201,7 @@ def SuperTrend(df, period, multiplier, ohlc=['open', 'high', 'low', 'close']):
     atr = 'ATR_' + str(period)
     st = 'ST_' + str(period) + '_' + str(multiplier)
     stx = 'STX_' + str(period) + '_' + str(multiplier)
-    
+
     """
     SuperTrend Algorithm :
     
@@ -219,7 +225,7 @@ def SuperTrend(df, period, multiplier, ohlc=['open', 'high', 'low', 'close']):
                                 IF((Previous SUPERTREND = Previous FINAL LOWERBAND) and (Current Close < Current FINAL LOWERBAND)) THEN
                                     Current FINAL UPPERBAND
     """
-    
+
     # Compute basic upper and lower bands
     df['basic_ub'] = (df[ohlc[1]] + df[ohlc[2]]) / 2 + multiplier * df[atr]
     df['basic_lb'] = (df[ohlc[1]] + df[ohlc[2]]) / 2 - multiplier * df[atr]
@@ -228,26 +234,35 @@ def SuperTrend(df, period, multiplier, ohlc=['open', 'high', 'low', 'close']):
     df['final_ub'] = 0.00
     df['final_lb'] = 0.00
     for i in range(period, len(df)):
-        df['final_ub'].iat[i] = df['basic_ub'].iat[i] if df['basic_ub'].iat[i] < df['final_ub'].iat[i - 1] or df[ohlc[3]].iat[i - 1] > df['final_ub'].iat[i - 1] else df['final_ub'].iat[i - 1]
-        df['final_lb'].iat[i] = df['basic_lb'].iat[i] if df['basic_lb'].iat[i] > df['final_lb'].iat[i - 1] or df[ohlc[3]].iat[i - 1] < df['final_lb'].iat[i - 1] else df['final_lb'].iat[i - 1]
-       
+        df['final_ub'].iat[i] = df['basic_ub'].iat[i] if df['basic_ub'].iat[i] < df['final_ub'].iat[i - 1] or \
+                                                         df[ohlc[3]].iat[i - 1] > df['final_ub'].iat[i - 1] else \
+        df['final_ub'].iat[i - 1]
+        df['final_lb'].iat[i] = df['basic_lb'].iat[i] if df['basic_lb'].iat[i] > df['final_lb'].iat[i - 1] or \
+                                                         df[ohlc[3]].iat[i - 1] < df['final_lb'].iat[i - 1] else \
+        df['final_lb'].iat[i - 1]
+
     # Set the Supertrend value
     df[st] = 0.00
     for i in range(period, len(df)):
-        df[st].iat[i] = df['final_ub'].iat[i] if df[st].iat[i - 1] == df['final_ub'].iat[i - 1] and df[ohlc[3]].iat[i] <= df['final_ub'].iat[i] else \
-                        df['final_lb'].iat[i] if df[st].iat[i - 1] == df['final_ub'].iat[i - 1] and df[ohlc[3]].iat[i] >  df['final_ub'].iat[i] else \
-                        df['final_lb'].iat[i] if df[st].iat[i - 1] == df['final_lb'].iat[i - 1] and df[ohlc[3]].iat[i] >= df['final_lb'].iat[i] else \
-                        df['final_ub'].iat[i] if df[st].iat[i - 1] == df['final_lb'].iat[i - 1] and df[ohlc[3]].iat[i] <  df['final_lb'].iat[i] else 0.00 
-                 
-    # Mark the trend direction up/down
-    df[stx] = np.where((df[st] > 0.00), np.where((df[ohlc[3]] < df[st]), 'down',  'up'), np.NaN)
+        df[st].iat[i] = df['final_ub'].iat[i] if df[st].iat[i - 1] == df['final_ub'].iat[i - 1] and df[ohlc[3]].iat[
+            i] <= df['final_ub'].iat[i] else \
+            df['final_lb'].iat[i] if df[st].iat[i - 1] == df['final_ub'].iat[i - 1] and df[ohlc[3]].iat[i] > \
+                                     df['final_ub'].iat[i] else \
+                df['final_lb'].iat[i] if df[st].iat[i - 1] == df['final_lb'].iat[i - 1] and df[ohlc[3]].iat[i] >= \
+                                         df['final_lb'].iat[i] else \
+                    df['final_ub'].iat[i] if df[st].iat[i - 1] == df['final_lb'].iat[i - 1] and df[ohlc[3]].iat[i] < \
+                                             df['final_lb'].iat[i] else 0.00
+
+        # Mark the trend direction up/down
+    df[stx] = np.where((df[st] > 0.00), np.where((df[ohlc[3]] < df[st]), 'down', 'up'), np.NaN)
 
     # Remove basic and final bands from the columns
     df.drop(['basic_ub', 'basic_lb', 'final_ub', 'final_lb'], inplace=True, axis=1)
-    
+
     df.fillna(0, inplace=True)
 
     return df
+
 
 def MACD(df, fastEMA=12, slowEMA=26, signal=9, base='Close'):
     """
@@ -278,17 +293,19 @@ def MACD(df, fastEMA=12, slowEMA=26, signal=9, base='Close'):
     # Compute fast and slow EMA    
     EMA(df, base, fE, fastEMA)
     EMA(df, base, sE, slowEMA)
-    
+
     # Compute MACD
     df[macd] = np.where(np.logical_and(np.logical_not(df[fE] == 0), np.logical_not(df[sE] == 0)), df[fE] - df[sE], 0)
-    
+
     # Compute MACD Signal
     EMA(df, macd, sig, signal)
-    
+
     # Compute MACD Histogram
-    df[hist] = np.where(np.logical_and(np.logical_not(df[macd] == 0), np.logical_not(df[sig] == 0)), df[macd] - df[sig], 0)
-    
+    df[hist] = np.where(np.logical_and(np.logical_not(df[macd] == 0), np.logical_not(df[sig] == 0)), df[macd] - df[sig],
+                        0)
+
     return df
+
 
 def BBand(df, base='Close', period=20, multiplier=2):
     """
@@ -305,23 +322,30 @@ def BBand(df, base='Close', period=20, multiplier=2):
             Upper Band (UpperBB_$period_$multiplier)
             Lower Band (LowerBB_$period_$multiplier)
     """
-    
+
     upper = 'UpperBB_' + str(period) + '_' + str(multiplier)
     lower = 'LowerBB_' + str(period) + '_' + str(multiplier)
-    
+
     sma = df[base].rolling(window=period, min_periods=period - 1).mean()
     sd = df[base].rolling(window=period).std()
     df[upper] = sma + (multiplier * sd)
     df[lower] = sma - (multiplier * sd)
-    
+
     df[upper].fillna(0, inplace=True)
     df[lower].fillna(0, inplace=True)
-    
+
     return df
 
+
 def vwma(df, window):
-   df['VWMA_'+str(window)] = df.apply(lambda x: x.close * x.volume, axis=1).rolling(window).sum() / df.volume.rolling(window).sum()
-   return df
+    df['VWMA_' + str(window)] = df.apply(lambda x: x.close * x.volume, axis=1).rolling(
+        window).sum() / df.volume.rolling(window).sum()
+    return df
+
+def VWMA(df):
+    df['VWAP'] = df.apply(lambda x: x.close * x.volume, axis=1).rolling(
+        df.shape[0]).sum() / df.volume.rolling(df.shape[0]).sum()
+    return df
 
 
 def price_volume_trend(data, trend_periods=21, close_col='close', vol_col='volume'):
@@ -330,7 +354,7 @@ def price_volume_trend(data, trend_periods=21, close_col='close', vol_col='volum
             try:
                 last_val = data.at[index - 1, 'pvt']
             except:
-                last_val=0
+                last_val = 0
             last_close = data.at[index - 1, close_col]
             today_close = row[close_col]
             today_vol = row[vol_col]
@@ -338,8 +362,10 @@ def price_volume_trend(data, trend_periods=21, close_col='close', vol_col='volum
         else:
             current_val = row[vol_col]
     data.set_value(index, 'pvt', current_val)
-    data['pvt_ema' + str(trend_periods)] = data['pvt'].ewm(ignore_na=False, min_periods=0, com=trend_periods,adjust=True).mean()
+    data['pvt_ema' + str(trend_periods)] = data['pvt'].ewm(ignore_na=False, min_periods=0, com=trend_periods,
+                                                           adjust=True).mean()
     return data
+
 
 def RSI(df, base="close", period=8):
     """
@@ -354,20 +380,21 @@ def RSI(df, base="close", period=8):
         df : Pandas DataFrame with new columns added for 
             Relative Strength Index (RSI_$period)
     """
- 
+
     delta = df[base].diff()
     up, down = delta.copy(), delta.copy()
 
     up[up < 0] = 0
     down[down > 0] = 0
-    
-    rUp = up.ewm(com=period - 1,  adjust=False).mean()
+
+    rUp = up.ewm(com=period - 1, adjust=False).mean()
     rDown = down.ewm(com=period - 1, adjust=False).mean().abs()
 
     df['RSI_' + str(period)] = 100 - 100 / (1 + rUp / rDown)
     df['RSI_' + str(period)].fillna(0, inplace=True)
 
     return df
+
 
 def Ichimoku(df, ohlc=['Open', 'High', 'Low', 'Close'], param=[9, 26, 52, 26]):
     """
@@ -381,43 +408,41 @@ def Ichimoku(df, ohlc=['Open', 'High', 'Low', 'Close'], param=[9, 26, 52, 26]):
     Returns :
         df : Pandas DataFrame with new columns added for ['Tenkan Sen', 'Kijun Sen', 'Senkou Span A', 'Senkou Span B', 'Chikou Span']
     """
-    
+
     high = df[ohlc[1]]
     low = df[ohlc[2]]
     close = df[ohlc[3]]
-    
+
     tenkan_sen_period = param[0]
     kijun_sen_period = param[1]
     senkou_span_period = param[2]
     chikou_span_period = param[3]
-    
+
     tenkan_sen_column = 'Tenkan Sen'
     kijun_sen_column = 'Kijun Sen'
     senkou_span_a_column = 'Senkou Span A'
     senkou_span_b_column = 'Senkou Span B'
     chikou_span_column = 'Chikou Span'
-    
+
     # Tenkan-sen (Conversion Line)
     tenkan_sen_high = high.rolling(window=tenkan_sen_period).max()
     tenkan_sen_low = low.rolling(window=tenkan_sen_period).min()
     df[tenkan_sen_column] = (tenkan_sen_high + tenkan_sen_low) / 2
-    
+
     # Kijun-sen (Base Line)
     kijun_sen_high = high.rolling(window=kijun_sen_period).max()
     kijun_sen_low = low.rolling(window=kijun_sen_period).min()
     df[kijun_sen_column] = (kijun_sen_high + kijun_sen_low) / 2
-    
+
     # Senkou Span A (Leading Span A)
     df[senkou_span_a_column] = ((df[tenkan_sen_column] + df[kijun_sen_column]) / 2).shift(kijun_sen_period)
-    
+
     # Senkou Span B (Leading Span B)
     senkou_span_high = high.rolling(window=senkou_span_period).max()
     senkou_span_low = low.rolling(window=senkou_span_period).min()
     df[senkou_span_b_column] = ((senkou_span_high + senkou_span_low) / 2).shift(kijun_sen_period)
-    
+
     # The most current closing price plotted chikou_span_period time periods behind
     df[chikou_span_column] = close.shift(-1 * chikou_span_period)
-    
+
     return df
-
-
