@@ -1,27 +1,25 @@
-from selenium import webdriver
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.common.exceptions import TimeoutException
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
-import json
-import time
 import logging
-from kiteconnect import KiteConnect
+import time
 import urllib.parse as urlparse
 from urllib.parse import parse_qs
 
+from kiteconnect import KiteConnect
+from selenium import webdriver
+
 logging.basicConfig(level=logging.INFO)
 
-
 import common.application as ap
-app_properties=ap.app_properties
+
+app_properties = ap.app_properties
 api_key = app_properties['api_key']
 api_secret = app_properties['api_secret']
-user_name=app_properties["user_name"]
-password=app_properties["password"]
-pin=app_properties["pin"]
+user_name = app_properties["user_name"]
+password = app_properties["password"]
+pin = app_properties["pin"]
+
+
 def get_session():
-    kite = KiteConnect(api_key,api_secret)
+    kite = KiteConnect(api_key, api_secret)
     url = kite.login_url()
     driver = webdriver.Firefox()
     driver.get(url)
@@ -40,7 +38,7 @@ def get_session():
     time.sleep(2)
     pinElement = driver.find_element_by_class_name('su-input-group')
     pinInput = pinElement.find_element_by_css_selector('input')
-    pinInput.send_keys(pin) 
+    pinInput.send_keys(pin)
     login_div = login_form.find_element_by_class_name('actions')
     submitButton = login_div.find_element_by_css_selector('button')
     submitButton.click()
@@ -48,7 +46,7 @@ def get_session():
     url = driver.current_url
     parsed = urlparse.urlparse(url)
     request_token = parse_qs(parsed.query)['request_token'][0]
-    data = kite.generate_session(request_token,api_secret)
+    data = kite.generate_session(request_token, api_secret)
     access_token = data["access_token"]
     kite.set_access_token(access_token)
     driver.close()

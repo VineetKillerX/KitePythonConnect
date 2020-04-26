@@ -1,6 +1,6 @@
 import subprocess as sp
 from datetime import datetime
-
+import sys
 tokens = ['738561','2953217','341249','356865','340481','408065','2714625','492033','424961','1270529']
 processes = []
 process_dictionary = {}
@@ -27,26 +27,17 @@ for token in tokens:
     print(str(token) + "  :  " + str(p.pid))
     processes.append(p)
 
-
 while True:
     date = getDateTime()
-    if (date.hour >= 15 and date.minute > 30) or (date.hour <= 9 and date.minute <= 10):
-        if date.hour == 9:
-            print("Market Not Available at this moment, Please Try Again in few minutes")
-            time.sleep(60)
+    for process in processes:
+        pid = process.pid
+        token = get_key(str(pid))
+        if process.poll() is None:
+            print("Process Running for Token " + str(token))
         else:
-            print("Market Not Available at this moment, Please Try Again from 09:10 till 15:30")
-            time.sleep(60*60)
-    else:
-        for process in processes:
-            pid = process.pid
-            token = get_key(str(pid))
-            if process.poll() is None:
-                print("Process Running for Token " + str(token))
-            else:
-                print("Process Not Running for Token " + str(token))
-                p = sp.Popen(['python3.7', './kite_trading.py', token])
-                process_dictionary[str(token)] = str(p.pid)
-                print(str(token) + "  :  " + str(p.pid))
-                processes.append(p)
+            print("Process Not Running for Token " + str(token))
+            p = sp.Popen(['python3.7', './kite_trading.py', token])
+            process_dictionary[str(token)] = str(p.pid)
+            print(str(token) + "  :  " + str(p.pid))
+            processes.append(p)
     time.sleep(60)

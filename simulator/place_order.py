@@ -1,9 +1,10 @@
-from selenium import webdriver
 import time
 
-import common.application as ap
-simulator_props = ap.simulator_props
+from selenium import webdriver
 
+import common.application as ap
+
+simulator_props = ap.simulator_props
 
 ## inputs
 url = 'https://moneybhai.moneycontrol.com'
@@ -11,7 +12,7 @@ email = simulator_props['email']
 pwd = simulator_props['pwd']
 
 
-def login(email, pwd,counter=0):
+def login(email, pwd, counter=0):
     try:
         driver = webdriver.Firefox()
         driver.get(url)
@@ -35,15 +36,16 @@ def login(email, pwd,counter=0):
         ## logged in
         return driver
     except:
-        counter = counter+1
+        print("Exception in login")
+        counter = counter + 1
         if counter < 3:
-            login(email,pwd,counter)
+            login(email, pwd, counter)
 
 
 driver = login(email, pwd)
 
 
-def place_order(action, stock, quantity,counter=0):
+def place_order(action, stock, quantity, counter=0):
     try:
         driver.switch_to.default_content()
         url_transact = 'https://moneybhai.moneycontrol.com/neworderview'
@@ -66,7 +68,7 @@ def place_order(action, stock, quantity,counter=0):
         driver.find_element_by_class_name('orderQty').send_keys(quantity)
         driver.find_element_by_id('btn_submit').click()
     except:
-        counter = counter+1
+        print("Exception in ", action, " for Stock : ", stock, " And Quantity : ", quantity)
+        counter = counter + 1
         if counter < 3:
-            place_order(action,stock,quantity,counter)
-
+            place_order(action, stock, quantity, counter)

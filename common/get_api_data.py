@@ -38,4 +38,3 @@ def get_price_v1(token,last_price_dict,counter=0):
         else:
             print("returning old price ",last_price_dict)
             return last_price_dict
-
