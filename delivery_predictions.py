@@ -7,8 +7,8 @@ import numpy as np
 import time
 from datetime import datetime, timedelta
 #from common.get_api_data import *
-from common.get_api_data_alpha_vantage import get_data,get_price
-
+from common.get_api_data_alpha_vantage import get_price
+from yahoo_fin.stock_info import get_data
 
 logging.basicConfig(level=logging.INFO)
 import common.application as ap
@@ -42,7 +42,7 @@ holding = ""
 order_id = ""
 swing = False
 flag = ''
-interval_int=5
+interval_int=15
 interval=str(interval_int)+"min"
 
 rsi_count=0
@@ -146,46 +146,30 @@ def stopper():
 def get_history_data():
     global historical_data, rsi, rsi_slope, last_close, swing,last_high,last_low,sma,ub,mb,lb,band_diff_trend,current_price
     swing = False
-    to_date = str(getDateTime() - timedelta(minutes=2)).split(".")[0]
-    current_price = get_price(token, last_close)
-    historical_data = get_data(token, from_date, to_date, interval, historical_data,key=keys[token])
-    df = historical_data
-    df = indicators.RSI(df,period=14)
-    df=indicators.SMA(df, "close", "sma_7", 7)
-    df['RSI_Trend'] = df['RSI_14'].diff()
-    window = 20
-    no_of_std = 2
-    rolling_mean = df['close'].rolling(window).mean()
-    rolling_std = df['close'].rolling(window).std()
-    df['ub'] = rolling_mean + (rolling_std * no_of_std)
-    df['mb'] = rolling_mean
-    df['lb'] = rolling_mean - (rolling_std * no_of_std)
-    df['ub_tren']= df['ub'].diff().round(0)
-    df['lb_tren']= df['lb'].diff().round(0)
-    df['3_ub_point']=df.ub.shift(2).apply(str)+","+    df.ub.shift(1).apply(str)+","+    df.ub.apply(str)
-    df['3_lb_point']=df.lb.shift(2).apply(str)+","+    df.lb.shift(1).apply(str)+","+    df.lb.apply(str)
-    df['divergence_angle']=df['3_ub_point'].apply(compute_angle)+df['3_lb_point'].apply(compute_angle)
-    df['divergence_col']=df.apply(lambda x:  "divergence" if 25 <=x['divergence_angle']<=100 and x['ub_tren']>=0 and x['lb_tren']<=0 and x['ub_tren']!=x['lb_tren'] else '',axis=1)
-    min_up=int(str(getDateTime()).split(".")[0][:-2].split(":")[-2])
-    min_up=min_up-min_up%interval_int
-    con_time=str(getDateTime()).split(":")[0]+":"+str(min_up)+":00"
-    con_time=datetime.strptime(con_time,"%Y-%m-%d %H:%M:%S") - timedelta(minutes=interval_int)
-    print(con_time)
-    df_l=df[df['timestamp']==con_time]
-    tail_dict = df_l.tail(1).to_dict('list')
-    print(tail_dict)
-    sma = tail_dict['sma_7'][0]
-    rsi = tail_dict['RSI_14'][0]
-    rsi_slope = tail_dict['RSI_Trend'][0]
-    last_close = tail_dict['close'][0]
-    last_low = tail_dict['low'][0]
-    last_high = tail_dict['high'][0]
-    ub=tail_dict['ub'][0]
-    mb=tail_dict['mb'][0]
-    lb=tail_dict['lb'][0]
-    swing = is_swing(df)
-
-    name = token + "/" + "pandasdf"
+    name = "resources/EQUITY_L.csv"
+    symbols=list(pd.read_csv(name)['SYMBOL'])
+    symbols=symbols[0]
+    for symbol in symbols:
+        historical_data = from1999 = get_data(symbol+".NS" , start_date = '01/01/2019')
+        df = historical_data
+        df = indicators.RSI(df,period=14)
+        df=indicators.SMA(df, "close", "sma_7", 7)
+        df['RSI_Trend'] = df['RSI_14'].diff()
+        window = 20
+        no_of_std = 2
+        rolling_mean = df['close'].rolling(window).mean()
+        rolling_std = df['close'].rolling(window).std()
+        df['ub'] = rolling_mean + (rolling_std * no_of_std)
+        df['mb'] = rolling_mean
+        df['lb'] = rolling_mean - (rolling_std * no_of_std)
+        df['ub_tren']= df['ub'].diff().round(0)
+        df['lb_tren']= df['lb'].diff().round(0)
+        df['3_ub_point']=df.ub.shift(2).apply(str)+","+    df.ub.shift(1).apply(str)+","+    df.ub.apply(str)
+        df['3_lb_point']=df.lb.shift(2).apply(str)+","+    df.lb.shift(1).apply(str)+","+    df.lb.apply(str)
+        df['divergence_angle']=df['3_ub_point'].apply(compute_angle)+df['3_lb_point'].apply(compute_angle)
+        df['divergence_col']=df.apply(lambda x:  "divergence" if 25 <=x['divergence_angle']<=100 and x['ub_tren']>=0 and x['lb_tren']<=0 and x['ub_tren']!=x['lb_tren'] else '',axis=1)
+        df['rsi_indication']=df.RSI_14.apply(lambda x:1 if x<=30 else 0 if x>=70 else -2)
+        df[-1:]
     df.to_csv(name)
 
     
@@ -234,19 +218,9 @@ def init():
     global order_id, holding,last_price,sma_triggered,activation,rsi_count,extrema_triggered
     name = token + "/trades.csv"
     try:
-        with open(name, 'r') as f:
-            lines = f.read().splitlines()
-            last_line = lines[-1]
-            order_id = last_line.split(",")[0]
-            holding = last_line.split(",")[6]
-            last_price = float(last_line.split(",")[7])
-            sma_triggered=convert_to_bool(last_line.split(",")[8])
-            activation=last_line.split(",")[9]
-            rsi_count=int(last_line.split(",")[10])
-            extrema_triggered=convert_to_bool(last_line.split(",")[11])
-            trade()
+        get_history_data()
     except:
-        trade()
+        get_history_data()
 
 def convert_to_bool(bool_value):
     if(bool_value=='True'):

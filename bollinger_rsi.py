@@ -4,12 +4,13 @@ import pandas as pd
 from common import indicators
 import sys
 from datetime import datetime, timedelta
-from common.get_api_data import *
+#from common.get_api_data import *
+from common.get_api_data_alpha_vantage import *
 
 logging.basicConfig(level=logging.INFO)
 import common.application as ap
 import pytz
-from simulator import place_order as simulator
+#from simulator import place_order as simulator
 from common.SlackUtil import sendMessage
 
 app_properties = ap.app_properties
@@ -41,20 +42,20 @@ flag = ''
 interval=10
 rsi_count=0
 sma_triggered=False
+extrema_triggered=False
 activation=''
 def getDateTime():
-    datetime_obj_hour_fwd = datetime.now(tz)
+    datetime_obj_hour_fwd = datetime.now(tz)+timedelta(seconds=65)
     return datetime_obj_hour_fwd
 
 
 datetime_obj_hour_fwd = getDateTime() + timedelta(hours=1)
 from_date = str(datetime_obj_hour_fwd - timedelta(days=14)).split(" ")[0]
-to_date = str(datetime_obj_hour_fwd).split(" ")[0]
 
 
 def create_log(action):
     log = str(order_id) +',' + str(rsi) + ',' + str(rsi_slope) + ',' + str(last_close) + ',' + str(
-        current_price) + ',' + str(action) + ',' + str(holding)+','+str(last_price)+","+str(sma_triggered)+","+str(activation)+","+str(rsi_count)+","+str(getDateTime())+"\n"
+        current_price) + ',' + str(action) + ',' + str(holding)+','+str(last_price)+","+str(sma_triggered)+","+str(activation)+","+str(rsi_count)+","+str(extrema_triggered)+","+str(getDateTime())+"\n"
     return log
 
 
@@ -63,8 +64,8 @@ def write_log(action, name=file_name):
     log = ''
     current_price = get_price(token, last_price)
     if action == 'BUY' or action == 'SELL':
-        simulator.place_order(action, token_mappings[token], 1000)
-        slack_msg = action + " : "+str(token_mappings[token]) + " @ "+str(current_price)
+        #simulator.place_order(action, token_mappings[token], 1000)
+        slack_msg = action + " : "+str(token_mappings[token]) + " @ "+str(current_price)  +" : Bollinger bands"
         if order_id == '':
             datetime_obj = getDateTime()
             order_id = str(datetime_obj.hour) + str(datetime_obj.minute) + str(datetime_obj.second)
@@ -136,6 +137,7 @@ def stopper():
 def get_history_data():
     global historical_data, rsi, rsi_slope, last_close, swing,last_high,last_low,sma,ub,mb,lb,band_diff_trend,current_price
     swing = False
+    to_date = str(getDateTime() - timedelta(minutes=2)).split(".")[0]
     current_price = get_price(token, last_close)
     historical_data = get_data(token, from_date, to_date, "10minute", historical_data)
     df = pd.DataFrame(historical_data)
@@ -164,6 +166,8 @@ def get_history_data():
     lb=tail_dict['lb'][0]
     band_diff_trend=tail_dict['band_diff_trend'][0]
     swing = is_swing(df)
+    name = token + "/" + "pandasdf"
+    df.to_csv(name)
 
     
 
@@ -183,13 +187,20 @@ def is_swing(df):
 def trade():
     signal = ''
     last_min = -1
+    
+    while True:
+        datetime_obj = getDateTime()
+        if((datetime_obj.hour == 9 and datetime_obj.minute >= 15 )or (datetime_obj.hour > 9)):
+            break
+        
     while True:
         datetime_obj = getDateTime()
         if (datetime_obj.hour >= 15 and datetime_obj.minute > 28) or (
                 datetime_obj.hour <= 9 and datetime_obj.minute <= 10):
-            raise Exception('Market Not Tradable at this moment')
+            print('Market Not Tradable at this moment')
+            break
         minutes = int(str(datetime_obj).split(".")[0].split(":")[1])
-        if minutes % 10 == 5 and (last_min == -1 or (minutes != last_min and last_min != -1)):
+        if (minutes % 10 == 5 or last_min==-1) and (last_min == -1 or (minutes != last_min and last_min != -1)):
             get_history_data()
             if (datetime_obj.hour < 15):
                 enter_in_market()
@@ -201,7 +212,7 @@ def trade():
 
 
 def init():
-    global order_id, holding,last_price
+    global order_id, holding,last_price,sma_triggered,activation,rsi_count,extrema_triggered
     name = token + "/trades.csv"
     try:
         with open(name, 'r') as f:
@@ -210,13 +221,20 @@ def init():
             order_id = last_line.split(",")[0]
             holding = last_line.split(",")[6]
             last_price = float(last_line.split(",")[7])
-            sma_triggered=bool(last_line.split(",")[8])
+            sma_triggered=convert_to_bool(last_line.split(",")[8])
             activation=last_line.split(",")[9]
-            rsi_count=last_line.split(",")[10]
+            rsi_count=int(last_line.split(",")[10])
+            extrema_triggered=convert_to_bool(last_line.split(",")[11])
             trade()
     except:
         trade()
 
+def convert_to_bool(bool_value):
+    if(bool_value=='True'):
+        bool_value=True
+    else:
+        bool_value=False
+    return bool_value
 
 def activate_signal():
     global activation,rsi_count
@@ -232,39 +250,43 @@ def activate_signal():
 def enter_in_market():
     if(holding==''):
         activate_signal()
-        if activation == 'high' and rsi<=70 and last_low <= up and rsi_count >1: # we need to check the price also with the upper bolinger band.
+        if activation == 'high' and rsi<=70 and last_low <= ub and rsi_count >1: # we need to check the price also with the upper bolinger band.
             write_log("SELL")
-        elif activation == 'low' and rsi>=30 and last_high >= low and rsi_count >1:  # we need to check the price also with the lower bolinger band.
+        elif activation == 'low' and rsi>=30 and last_high >= lb and rsi_count >1:  # we need to check the price also with the lower bolinger band.
             write_log("BUY")
         else:
             write_log("NONE")
     elif holding != '' and order_id != '':
             write_log("HOLD")   
-    
-        
-# def identify_divergence():
-#     if band_diff_trend()
+
 def is_sma_triggered():
     global sma_triggered
+    is_extrema_triggered()
     if((activation=='high' and last_low<mb)or (activation=='low' and last_high>mb)):
         sma_triggered=True
+
+def is_extrema_triggered():
+    global extrema_triggered
+    if(sma_triggered and (activation=='high' and last_low<lb)or (activation=='low' and last_high>ub)):
+        extrema_triggered=True
         
 def exit_from_market():
     global flag
     if(holding!=''):
         is_sma_triggered()
-        if(sma_triggered and activation=='high' and (last_close > mb or last_low<=lb)):
+        if(activation=='high' and ((sma_triggered and last_close >= mb) or (extrema_triggered and last_close>=lb))):
             flag = 'Profit[Autotrigered]' if last_price > current_price  else 'LOSS[Autotrigered]'
             write_log('BUY')
             reset()
-        elif(sma_triggered and activation=='low' and (last_close < mb or last_high<=ub)):
+        elif(activation=='low' and ((sma_triggered and last_close <= mb) or (extrema_triggered and  last_close<=ub))):  # this condition needs to 
             flag = 'Profit[Autotrigered]' if last_price < current_price  else 'LOSS[Autotrigered]'
             write_log('SELL')
             reset()
          
 def reset():
-    global sma_triggered,activation,rsi_count
+    global sma_triggered,activation,rsi_count,extrema_triggered
     sma_triggered=False
+    extrema_triggered=False
     activation=""
     rsi_count=0
         

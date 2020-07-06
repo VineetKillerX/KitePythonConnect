@@ -2,7 +2,7 @@ import requests
 import json
 
 import common.application as ap
-from common.get_api_data import *
+
 
 app_properties = ap.app_properties
 url = app_properties['slack_url']
